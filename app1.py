@@ -1018,14 +1018,22 @@ with tab4:
         except: return ""
 
     st.dataframe(
-        tbl.style.format({
-            "Overall":"{:.1f}","Office":"{:.1f}","Retail":"{:.1f}",
-            "Hospitality":"{:.1f}","Multifamily":"{:.1f}","Demo Bonus":"{:.1f}",
-            "Pop Growth": lambda x: f"{x:.1%}" if pd.notna(x) else "N/A",
-            "Median Income": lambda x: f"${x:,.0f}" if pd.notna(x) else "N/A",
-        }).applymap(hl, subset=["Overall","Office","Retail","Hospitality","Multifamily","Rating"]),
-        use_container_width=True, height=420,
-    )
+    tbl.style.format({
+        "Overall": "{:.1f}",
+        "Office": "{:.1f}",
+        "Retail": "{:.1f}",
+        "Hospitality": "{:.1f}",
+        "Multifamily": "{:.1f}",
+        "Demo Bonus": "{:.1f}",
+        "Pop Growth": lambda x: f"{x:.1%}" if pd.notna(x) else "N/A",
+        "Median Income": lambda x: f"${x:,.0f}" if pd.notna(x) else "N/A",
+    }).map(
+        hl,
+        subset=["Overall", "Office", "Retail", "Hospitality", "Multifamily", "Rating"]
+    ),
+    use_container_width=True,
+    height=420,
+)
     st.download_button("⬇️ Download CSV", data=tbl.to_csv(index=False),
                        file_name="stadium_re_scores_v2.csv", mime="text/csv")
 
