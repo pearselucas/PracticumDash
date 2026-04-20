@@ -1,5 +1,5 @@
 """
-Stadium District Real Estate Investment Analyzer v3.0
+Stadium District Real Estate Investment Analyzer v4.0
 Run: streamlit run app_updated.py
 Requires: pip install streamlit plotly pandas openpyxl
 """
@@ -10,7 +10,6 @@ import plotly.graph_objects as go
 import plotly.express as px
 import numpy as np
 import openpyxl
-from io import BytesIO
 
 st.set_page_config(
     page_title="Stadium RE Investment Analyzer",
@@ -47,8 +46,8 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 .metric-card .value { font-size:1.6rem; font-weight:800; color:#0f172a; }
 .metric-card .sub   { font-size:0.8rem; color:#94a3b8; margin-top:0.25rem; }
 
-.score-badge-BUY   { background:#d1fae5; color:#065f46; border:1.5px solid #6ee7b7; }
-.score-badge-HOLD  { background:#fef3c7; color:#78350f; border:1.5px solid #fcd34d; }
+.score-badge-POTENTIAL   { background:#d1fae5; color:#065f46; border:1.5px solid #6ee7b7; }
+.score-badge-INFO  { background:#fef3c7; color:#78350f; border:1.5px solid #fcd34d; }
 .score-badge-AVOID { background:#fee2e2; color:#991b1b; border:1.5px solid #fca5a5; }
 .score-badge {
     display:inline-block; padding:0.3rem 0.9rem; border-radius:6px;
@@ -86,252 +85,56 @@ div[data-testid="stTabs"] button { font-weight:600; font-size:0.95rem; }
     margin: 1.5rem 0;
     text-align: center;
 }
-.upload-section h3 {
-    color: #1e293b;
-    font-size: 1.1rem;
-    margin-bottom: 0.5rem;
-}
-.upload-section p {
-    color: #64748b;
-    font-size: 0.9rem;
-    margin-bottom: 1rem;
-}
 </style>
 """, unsafe_allow_html=True)
 
-# ── Score Functions ──────────────────────────────────────────────────────────
-def load_excel_scores(file_obj):
-    """Load scores from uploaded Excel file"""
+# ── Data Loading Functions ────────────────────────────────────────────────────
+def load_excel_data(file_obj):
+    """Load all data from the HBU Leaderboard sheet"""
     wb = openpyxl.load_workbook(file_obj, data_only=True)
     ws = wb['HBU Leaderboard']
     
-    scores_data = {}
-    for row in ws.iter_rows(min_row=5, max_row=12, min_col=1, max_col=5):
-        stadium = row[0].value
-        if stadium:
-            # Map stadium names to match the hardcoded data structure
-            stadium_map = {
-                'MBS': 'Mercedes-Benz Stadium',
-                'Braves': 'Truist Park',
-                'Bank of America Stadium': 'Bank of America Stadium',
-                'Spectrum Center': 'Spectrum Center',
-                'Allegiant Stadium': 'Allegiant Stadium',
-                'T Mobile Arena': 'T-Mobile Arena',
-                'American Airlines Center': 'American Airlines Center',
-                'AT&T Stadium': 'AT&T Stadium'
-            }
-            
-            mapped_name = stadium_map.get(stadium, stadium)
-            scores_data[mapped_name] = {
-                'office': float(row[1].value) if row[1].value else 0,
-                'retail': float(row[2].value) if row[2].value else 0,
-                'hospitality': float(row[3].value) if row[3].value else 0,
-                'multifamily': float(row[4].value) if row[4].value else 0
-            }
+    data = []
+    # Stadium name mapping for display
+    stadium_display_names = {
+        'MBS': 'Mercedes-Benz Stadium',
+        'Braves': 'Truist Park',
+        'Bank of America Properties': 'Bank of America Stadium',
+        'Spectrum Center Properties': 'Spectrum Center',
+        'Allegiant Stadium Properties': 'Allegiant Stadium',
+        'T Mobile Arena': 'T-Mobile Arena',
+        'American Airlines Center': 'American Airlines Center',
+        'AT&T Stadium': 'AT&T Stadium'
+    }
     
-    return scores_data
+    # Read rows 5-12 (data rows)
+    for row_idx in range(5, 13):
+        row = ws[row_idx]
+        stadium_key = row[0].value
+        if stadium_key:
+            display_name = stadium_display_names.get(stadium_key, stadium_key)
+            data.append({
+                'Stadium': display_name,
+                'Office Score': float(row[1].value) if row[1].value else 0,
+                'Retail Score': float(row[2].value) if row[2].value else 0,
+                'Hospitality Score': float(row[3].value) if row[3].value else 0,
+                'Multifamily Score': float(row[4].value) if row[4].value else 0,
+                'Highest & Best Use': row[9].value if row[9].value else '',
+                'Top Score': float(row[10].value) if row[10].value else 0,
+            })
+    
+    return pd.DataFrame(data)
 
-# ── Default Stadium Data (kept for reference, will be overridden by Excel) ────
-STADIUMS = {
-    "Truist Park": {
-        "city": "Atlanta, GA", "team": "Atlanta Braves", "sport": "MLB",
-        "league_revenue_rank": 6, "lat": 33.8908, "lon": -84.4677,
-        "office":   {"inventory_sf": 9_300_000, "under_construction_sf": 0,
-                     "net_absorption_12mo": 534_000, "sale_price_sf": 222,
-                     "asking_rent_sf": 34, "cap_rate": 0.084,
-                     "vacancy": 0.18, "vacancy_10yr": 0.1977,
-                     "rent_growth": 0.026, "rent_growth_10yr": 0.039, "cap_rate_10yr": 0.0752},
-        "retail":   {"inventory_sf": 3_800_000, "under_construction_sf": 0,
-                     "net_absorption_12mo": -23_300, "sale_price_sf": 249,
-                     "asking_rent_sf": 37, "cap_rate": 0.071,
-                     "vacancy": 0.0205, "vacancy_10yr": 0.0291,
-                     "rent_growth": 0.065, "rent_growth_10yr": 0.048, "cap_rate_10yr": 0.0719},
-        "hospitality": {"adr": 154, "revpar": 96, "sale_price_room": 126_000,
-                        "cap_rate": 0.086, "occupancy": 0.6245,
-                        "occupancy_10yr": 0.6381, "cap_rate_10yr": 0.0828},
-        "multifamily": {"inventory_units": 8_804, "under_construction_units": 640,
-                        "net_absorption_units": 423, "vacancy": 0.08,
-                        "market_rent_unit": 1_762, "sale_price_unit": 256_000,
-                        "cap_rate": 0.055, "occupancy": 0.9249, "occupancy_10yr": 0.914,
-                        "rent_growth": 0.003, "rent_growth_10yr": 0.032, "cap_rate_10yr": 0.0514},
-        "demographics": {"pop_2020": 14_169, "pop_2025": 15_850,
-                         "pop_growth_5yr": 0.024, "median_income": 91_802},
-    },
-    "Mercedes-Benz Stadium": {
-        "city": "Atlanta, GA", "team": "Atlanta Falcons / Atlanta United",
-        "sport": "NFL/MLS", "league_revenue_rank": 3,
-        "lat": 33.7554, "lon": -84.4008,
-        "office":   {"inventory_sf": 28_000_000, "under_construction_sf": 0,
-                     "net_absorption_12mo": 112_000, "sale_price_sf": 183,
-                     "asking_rent_sf": 29, "cap_rate": 0.086,
-                     "vacancy": 0.21, "vacancy_10yr": 0.1432,
-                     "rent_growth": 0.018, "rent_growth_10yr": 0.041, "cap_rate_10yr": 0.0755},
-        "retail":   {"inventory_sf": 2_200_000, "under_construction_sf": 70_000,
-                     "net_absorption_12mo": -27_100, "sale_price_sf": 234,
-                     "asking_rent_sf": 30, "cap_rate": 0.071,
-                     "vacancy": 0.14, "vacancy_10yr": 0.0995,
-                     "rent_growth": 0.054, "rent_growth_10yr": 0.049, "cap_rate_10yr": 0.0728},
-        "hospitality": {"adr": 206, "revpar": 128, "sale_price_room": 256_000,
-                        "cap_rate": 0.079, "occupancy": 0.669,
-                        "occupancy_10yr": 0.6195, "cap_rate_10yr": 0.0761},
-        "multifamily": {"inventory_units": 8_654, "under_construction_units": 889,
-                        "net_absorption_units": 355, "vacancy": 0.18,
-                        "market_rent_unit": 1_681, "sale_price_unit": 325_000,
-                        "cap_rate": 0.057, "occupancy": 0.8243, "occupancy_10yr": 0.8778,
-                        "rent_growth": -0.002, "rent_growth_10yr": 0.02, "cap_rate_10yr": 0.053},
-        "demographics": {"pop_2020": 20_811, "pop_2025": 22_444,
-                         "pop_growth_5yr": 0.016, "median_income": 59_186},
-    },
-    "Bank of America Stadium": {
-        "city": "Charlotte, NC", "team": "Carolina Panthers",
-        "sport": "NFL", "league_revenue_rank": 2,
-        "lat": 35.2258, "lon": -80.8528,
-        "office":   {"inventory_sf": 30_500_000, "under_construction_sf": 525_000,
-                     "net_absorption_12mo": 151_000, "sale_price_sf": 422,
-                     "asking_rent_sf": 44.74, "cap_rate": 0.067,
-                     "vacancy": 0.2346, "vacancy_10yr": 0.128,
-                     "rent_growth": 0.04, "rent_growth_10yr": 0.05, "cap_rate_10yr": 0.0652},
-        "retail":   {"inventory_sf": 1_300_000, "under_construction_sf": 0,
-                     "net_absorption_12mo": -29_700, "sale_price_sf": 376,
-                     "asking_rent_sf": 36.85, "cap_rate": 0.062,
-                     "vacancy": 0.1649, "vacancy_10yr": 0.0714,
-                     "rent_growth": 0.051, "rent_growth_10yr": 0.045, "cap_rate_10yr": 0.0619},
-        "hospitality": {"adr": 187, "revpar": 132, "sale_price_room": 212_000,
-                        "cap_rate": 0.082, "occupancy": 0.7107,
-                        "occupancy_10yr": 0.6617, "cap_rate_10yr": 0.079},
-        "multifamily": {"inventory_units": 3_104, "under_construction_units": 138,
-                        "net_absorption_units": 125, "vacancy": 0.11,
-                        "market_rent_unit": 1_626, "sale_price_unit": 268_000,
-                        "cap_rate": 0.063, "occupancy": 0.8942, "occupancy_10yr": 0.9114,
-                        "rent_growth": 0.002, "rent_growth_10yr": 0.029, "cap_rate_10yr": 0.061},
-        "demographics": {"pop_2020": 15_712, "pop_2025": 18_291,
-                         "pop_growth_5yr": 0.033, "median_income": 95_907},
-    },
-    "Spectrum Center": {
-        "city": "Charlotte, NC", "team": "Charlotte Hornets",
-        "sport": "NBA", "league_revenue_rank": 4,
-        "lat": 35.2251, "lon": -80.8392,
-        "office":   {"inventory_sf": 30_500_000, "under_construction_sf": 525_000,
-                     "net_absorption_12mo": 151_000, "sale_price_sf": 422,
-                     "asking_rent_sf": 44.74, "cap_rate": 0.067,
-                     "vacancy": 0.2248, "vacancy_10yr": 0.1241,
-                     "rent_growth": 0.04, "rent_growth_10yr": 0.05, "cap_rate_10yr": 0.0655},
-        "retail":   {"inventory_sf": 1_350_000, "under_construction_sf": 0,
-                     "net_absorption_12mo": -15_800, "sale_price_sf": 376,
-                     "asking_rent_sf": 36.85, "cap_rate": 0.062,
-                     "vacancy": 0.101, "vacancy_10yr": 0.06,
-                     "rent_growth": 0.051, "rent_growth_10yr": 0.047, "cap_rate_10yr": 0.0623},
-        "hospitality": {"adr": 161, "revpar": 107, "sale_price_room": 212_000,
-                        "cap_rate": 0.082, "occupancy": 0.6633,
-                        "occupancy_10yr": 0.6617, "cap_rate_10yr": 0.079},
-        "multifamily": {"inventory_units": 3_360, "under_construction_units": 150,
-                        "net_absorption_units": 118, "vacancy": 0.12,
-                        "market_rent_unit": 1_626, "sale_price_unit": 268_000,
-                        "cap_rate": 0.063, "occupancy": 0.8838, "occupancy_10yr": 0.9114,
-                        "rent_growth": 0.001, "rent_growth_10yr": 0.028, "cap_rate_10yr": 0.0612},
-        "demographics": {"pop_2020": 15_123, "pop_2025": 17_565,
-                         "pop_growth_5yr": 0.032, "median_income": 92_000},
-    },
-    "Allegiant Stadium": {
-        "city": "Las Vegas, NV", "team": "Las Vegas Raiders",
-        "sport": "NFL", "league_revenue_rank": 1,
-        "lat": 36.0909, "lon": -115.1833,
-        "office":   {"inventory_sf": 23_800_000, "under_construction_sf": 0,
-                     "net_absorption_12mo": -235_000, "sale_price_sf": 292,
-                     "asking_rent_sf": 36, "cap_rate": 0.076,
-                     "vacancy": 0.153, "vacancy_10yr": 0.1057,
-                     "rent_growth": 0.03, "rent_growth_10yr": 0.043, "cap_rate_10yr": 0.0712},
-        "retail":   {"inventory_sf": 6_300_000, "under_construction_sf": 0,
-                     "net_absorption_12mo": -143_000, "sale_price_sf": 346,
-                     "asking_rent_sf": 32, "cap_rate": 0.065,
-                     "vacancy": 0.064, "vacancy_10yr": 0.0487,
-                     "rent_growth": 0.045, "rent_growth_10yr": 0.051, "cap_rate_10yr": 0.0638},
-        "hospitality": {"adr": 189, "revpar": 147, "sale_price_room": 356_000,
-                        "cap_rate": 0.073, "occupancy": 0.7767,
-                        "occupancy_10yr": 0.7543, "cap_rate_10yr": 0.0713},
-        "multifamily": {"inventory_units": 5_223, "under_construction_units": 0,
-                        "net_absorption_units": -78, "vacancy": 0.081,
-                        "market_rent_unit": 1_584, "sale_price_unit": 252_000,
-                        "cap_rate": 0.059, "occupancy": 0.9187, "occupancy_10yr": 0.9212,
-                        "rent_growth": 0.012, "rent_growth_10yr": 0.035, "cap_rate_10yr": 0.0572},
-        "demographics": {"pop_2020": 9_877, "pop_2025": 10_234,
-                         "pop_growth_5yr": 0.007, "median_income": 67_543},
-    },
-    "T-Mobile Arena": {
-        "city": "Las Vegas, NV", "team": "Vegas Golden Knights",
-        "sport": "NHL", "league_revenue_rank": 5,
-        "lat": 36.1028, "lon": -115.1783,
-        "office":   {"inventory_sf": 23_800_000, "under_construction_sf": 0,
-                     "net_absorption_12mo": -235_000, "sale_price_sf": 292,
-                     "asking_rent_sf": 36, "cap_rate": 0.076,
-                     "vacancy": 0.153, "vacancy_10yr": 0.1057,
-                     "rent_growth": 0.03, "rent_growth_10yr": 0.043, "cap_rate_10yr": 0.0712},
-        "retail":   {"inventory_sf": 6_500_000, "under_construction_sf": 0,
-                     "net_absorption_12mo": -138_000, "sale_price_sf": 346,
-                     "asking_rent_sf": 32, "cap_rate": 0.065,
-                     "vacancy": 0.065, "vacancy_10yr": 0.0487,
-                     "rent_growth": 0.044, "rent_growth_10yr": 0.051, "cap_rate_10yr": 0.0638},
-        "hospitality": {"adr": 198, "revpar": 153, "sale_price_room": 356_000,
-                        "cap_rate": 0.073, "occupancy": 0.7733,
-                        "occupancy_10yr": 0.7543, "cap_rate_10yr": 0.0713},
-        "multifamily": {"inventory_units": 5_800, "under_construction_units": 0,
-                        "net_absorption_units": -62, "vacancy": 0.083,
-                        "market_rent_unit": 1_584, "sale_price_unit": 252_000,
-                        "cap_rate": 0.059, "occupancy": 0.9171, "occupancy_10yr": 0.9212,
-                        "rent_growth": 0.01, "rent_growth_10yr": 0.034, "cap_rate_10yr": 0.0572},
-        "demographics": {"pop_2020": 10_234, "pop_2025": 10_589,
-                         "pop_growth_5yr": 0.007, "median_income": 68_901},
-    },
-    "American Airlines Center": {
-        "city": "Dallas, TX", "team": "Dallas Mavericks / Dallas Stars",
-        "sport": "NBA/NHL", "league_revenue_rank": 4,
-        "lat": 32.7905, "lon": -96.8103,
-        "office":   {"inventory_sf": 44_200_000, "under_construction_sf": 1_100_000,
-                     "net_absorption_12mo": 678_000, "sale_price_sf": 312,
-                     "asking_rent_sf": 40, "cap_rate": 0.072,
-                     "vacancy": 0.18, "vacancy_10yr": 0.1342,
-                     "rent_growth": 0.035, "rent_growth_10yr": 0.048, "cap_rate_10yr": 0.0685},
-        "retail":   {"inventory_sf": 8_900_000, "under_construction_sf": 125_000,
-                     "net_absorption_12mo": 45_600, "sale_price_sf": 298,
-                     "asking_rent_sf": 35, "cap_rate": 0.068,
-                     "vacancy": 0.049, "vacancy_10yr": 0.0421,
-                     "rent_growth": 0.058, "rent_growth_10yr": 0.052, "cap_rate_10yr": 0.0663},
-        "hospitality": {"adr": 221, "revpar": 167, "sale_price_room": 287_000,
-                        "cap_rate": 0.077, "occupancy": 0.7556,
-                        "occupancy_10yr": 0.7123, "cap_rate_10yr": 0.0743},
-        "multifamily": {"inventory_units": 12_450, "under_construction_units": 890,
-                        "net_absorption_units": 678, "vacancy": 0.09,
-                        "market_rent_unit": 1_843, "sale_price_unit": 289_000,
-                        "cap_rate": 0.054, "occupancy": 0.9102, "occupancy_10yr": 0.9234,
-                        "rent_growth": 0.025, "rent_growth_10yr": 0.038, "cap_rate_10yr": 0.0523},
-        "demographics": {"pop_2020": 18_765, "pop_2025": 21_234,
-                         "pop_growth_5yr": 0.026, "median_income": 87_654},
-    },
-    "AT&T Stadium": {
-        "city": "Arlington, TX", "team": "Dallas Cowboys",
-        "sport": "NFL", "league_revenue_rank": 1,
-        "lat": 32.7473, "lon": -97.0945,
-        "office":   {"inventory_sf": 44_200_000, "under_construction_sf": 1_100_000,
-                     "net_absorption_12mo": 678_000, "sale_price_sf": 312,
-                     "asking_rent_sf": 40, "cap_rate": 0.072,
-                     "vacancy": 0.175, "vacancy_10yr": 0.1342,
-                     "rent_growth": 0.036, "rent_growth_10yr": 0.048, "cap_rate_10yr": 0.0685},
-        "retail":   {"inventory_sf": 9_200_000, "under_construction_sf": 150_000,
-                     "net_absorption_12mo": 52_300, "sale_price_sf": 298,
-                     "asking_rent_sf": 35, "cap_rate": 0.068,
-                     "vacancy": 0.045, "vacancy_10yr": 0.0421,
-                     "rent_growth": 0.06, "rent_growth_10yr": 0.052, "cap_rate_10yr": 0.0663},
-        "hospitality": {"adr": None, "revpar": None, "sale_price_room": None,
-                        "cap_rate": None, "occupancy": None,
-                        "occupancy_10yr": None, "cap_rate_10yr": None},
-        "multifamily": {"inventory_units": 13_890, "under_construction_units": 1_050,
-                        "net_absorption_units": 892, "vacancy": 0.07,
-                        "market_rent_unit": 1_923, "sale_price_unit": 298_000,
-                        "cap_rate": 0.051, "occupancy": 0.9301, "occupancy_10yr": 0.9234,
-                        "rent_growth": 0.032, "rent_growth_10yr": 0.039, "cap_rate_10yr": 0.0503},
-        "demographics": {"pop_2020": 19_876, "pop_2025": 22_567,
-                         "pop_growth_5yr": 0.027, "median_income": 89_234},
-    },
+# Stadium metadata for visualization
+STADIUM_META = {
+    "Mercedes-Benz Stadium": {"city": "Atlanta, GA", "team": "Atlanta Falcons / Atlanta United", "sport": "NFL/MLS"},
+    "Truist Park": {"city": "Atlanta, GA", "team": "Atlanta Braves", "sport": "MLB"},
+    "Bank of America Stadium": {"city": "Charlotte, NC", "team": "Carolina Panthers", "sport": "NFL"},
+    "Spectrum Center": {"city": "Charlotte, NC", "team": "Charlotte Hornets", "sport": "NBA"},
+    "Allegiant Stadium": {"city": "Las Vegas, NV", "team": "Las Vegas Raiders", "sport": "NFL"},
+    "T-Mobile Arena": {"city": "Las Vegas, NV", "team": "Vegas Golden Knights", "sport": "NHL"},
+    "American Airlines Center": {"city": "Dallas, TX", "team": "Dallas Mavericks / Dallas Stars", "sport": "NBA/NHL"},
+    "AT&T Stadium": {"city": "Arlington, TX", "team": "Dallas Cowboys", "sport": "NFL"},
 }
 
 SPORT_COLORS = {
@@ -339,60 +142,24 @@ SPORT_COLORS = {
     "NHL": "#000000", "NFL/MLS": "#0A2240", "NBA/NHL": "#00471B"
 }
 
-def safe(x): return x is not None and not (isinstance(x, float) and np.isnan(x))
 def rating(score):
-    if score >= 65: return "BUY"
-    if score >= 50: return "HOLD"
+    """Convert score to rating category"""
+    if score >= 65: return "POTENTIAL"
+    if score >= 50: return "INFO"
     return "AVOID"
 
-def compute_scores_from_excel(stadiums_dict, excel_scores):
-    """Compute final scores using Excel-based asset class scores"""
-    scores = []
-    for stadium_name, data in stadiums_dict.items():
-        if stadium_name in excel_scores:
-            excel_score = excel_scores[stadium_name]
-            office_score = excel_score['office']
-            retail_score = excel_score['retail']
-            hosp_score = excel_score['hospitality']
-            mf_score = excel_score['multifamily']
-            
-            # Calculate overall as weighted average (25% each asset class)
-            overall = (office_score + retail_score + hosp_score + mf_score) / 4
-            
-            # Demographics bonus (keeping original logic)
-            demo = data.get("demographics", {})
-            pop_growth = demo.get("pop_growth_5yr", 0.02)
-            median_income = demo.get("median_income", 75000)
-            
-            income_bonus = min(4, max(0, (median_income - 50000) / 12500))
-            growth_bonus = min(4, max(0, (pop_growth - 0.01) / 0.005))
-            demo_bonus = income_bonus + growth_bonus
-            
-            scores.append({
-                "stadium": stadium_name,
-                "city": data["city"],
-                "sport": data["sport"],
-                "team": data["team"],
-                "overall": overall,
-                "office": office_score,
-                "retail": retail_score,
-                "hospitality": hosp_score,
-                "multifamily": mf_score,
-                "demo_bonus": demo_bonus,
-                "pop_growth": pop_growth,
-                "median_income": median_income,
-                "lat": data["lat"],
-                "lon": data["lon"],
-            })
-    
-    return pd.DataFrame(scores).sort_values("overall", ascending=False)
+def rating_display(score):
+    """Convert score to display text"""
+    if score >= 65: return "Potential Investment"
+    if score >= 50: return "More Information Needed"
+    return "Avoid This Asset Class"
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SIDEBAR & FILE UPLOAD
 # ══════════════════════════════════════════════════════════════════════════════
 with st.sidebar:
     st.markdown("### Upload Data File")
-    st.markdown("Upload your Excel template to analyze stadium district investments")
+    st.markdown("Upload your Excel template to visualize stadium district investment analysis")
     
     uploaded_file = st.file_uploader(
         "Choose Excel file",
@@ -402,62 +169,43 @@ with st.sidebar:
     
     if uploaded_file is not None:
         try:
-            excel_scores = load_excel_scores(uploaded_file)
-            st.success(f"Loaded scores for {len(excel_scores)} stadiums")
-            use_excel = True
+            df = load_excel_data(uploaded_file)
+            # Add metadata
+            df['City'] = df['Stadium'].map(lambda x: STADIUM_META.get(x, {}).get('city', ''))
+            df['Team'] = df['Stadium'].map(lambda x: STADIUM_META.get(x, {}).get('team', ''))
+            df['Sport'] = df['Stadium'].map(lambda x: STADIUM_META.get(x, {}).get('sport', ''))
+            
+            st.success(f"Loaded data for {len(df)} stadiums")
+            data_loaded = True
         except Exception as e:
             st.error(f"Error loading file: {str(e)}")
-            use_excel = False
-            excel_scores = {}
+            data_loaded = False
+            df = pd.DataFrame()
     else:
-        use_excel = False
-        excel_scores = {}
-        st.info("Using default scoring methodology")
+        data_loaded = False
+        df = pd.DataFrame()
+        st.warning("Please upload an Excel file to begin analysis")
     
-    st.markdown("---")
-    st.markdown("### Filters")
-    sports_filter = st.multiselect(
-        "Sport",
-        options=["NFL", "MLB", "NBA", "NHL", "NFL/MLS", "NBA/NHL"],
-        default=["NFL", "MLB", "NBA", "NHL", "NFL/MLS", "NBA/NHL"]
-    )
-    
-    st.markdown("---")
-    st.markdown("### Investment Criteria")
-    st.caption("**Potential Investment **: Score ≥ 65")
-    st.caption("**More Information Needed**: Score 50-64")
-    st.caption("**Avoid this Investment**: Score < 50")
+    if data_loaded:
+        st.markdown("---")
+        st.markdown("### Filters")
+        sports_filter = st.multiselect(
+            "Sport",
+            options=df['Sport'].unique().tolist(),
+            default=df['Sport'].unique().tolist()
+        )
+        
+        st.markdown("---")
+        st.markdown("### Investment Criteria")
+        st.caption("**Potential Investment**: Score ≥ 65")
+        st.caption("**More Information Needed**: Score 50-64")
+        st.caption("**Avoid This Asset Class**: Score < 50")
 
-# ══════════════════════════════════════════════════════════════════════════════
-# COMPUTE SCORES
-# ══════════════════════════════════════════════════════════════════════════════
-if use_excel and excel_scores:
-    df = compute_scores_from_excel(STADIUMS, excel_scores)
+# Apply filters if data is loaded
+if data_loaded and len(df) > 0:
+    filtered = df[df['Sport'].isin(sports_filter)].copy()
 else:
-    # Use default scoring (original methodology)
-    # This code block would contain the original scoring logic
-    # For now, using a simplified version
-    df = pd.DataFrame([
-        {
-            "stadium": k,
-            "city": v["city"],
-            "sport": v["sport"],
-            "team": v["team"],
-            "overall": 60,  # placeholder
-            "office": 60,
-            "retail": 60,
-            "hospitality": 60,
-            "multifamily": 60,
-            "demo_bonus": 5,
-            "pop_growth": v.get("demographics", {}).get("pop_growth_5yr", 0.02),
-            "median_income": v.get("demographics", {}).get("median_income", 75000),
-            "lat": v["lat"],
-            "lon": v["lon"],
-        }
-        for k, v in STADIUMS.items()
-    ])
-
-filtered = df[df["sport"].isin(sports_filter)].copy()
+    filtered = df
 
 # ══════════════════════════════════════════════════════════════════════════════
 # HEADER
@@ -468,12 +216,16 @@ st.markdown(f"""
     <p>Comprehensive analysis of commercial real estate opportunities in major sports venue corridors. 
     Data-driven investment scoring across office, retail, hospitality, and multifamily asset classes.</p>
     <div class="subtitle-row">
-        <span class="pill">{len(filtered)} Stadiums Analyzed</span>
+        <span class="pill">{len(filtered) if data_loaded else 0} Stadiums Analyzed</span>
         <span class="pill">4 Asset Classes</span>
         <span class="pill">CoStar Analytics Q1 2026</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
+
+if not data_loaded:
+    st.info("👆 Please upload your Excel file using the sidebar to begin the analysis")
+    st.stop()
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MAIN TABS
@@ -489,26 +241,26 @@ tab1, tab2, tab3, tab4 = st.tabs([
 # TAB 1 – Executive Summary
 # ══════════════════════════════════════════════════════════════════════════════
 with tab1:
-    st.markdown("### Top Investment Opportunities")
+    st.markdown("### Top Investment Opportunities by Best Use Score")
     
-    top3 = filtered.nlargest(3, "overall")
+    top3 = filtered.nlargest(3, "Top Score")
     cols = st.columns(3)
     
     for idx, (_, row) in enumerate(top3.iterrows()):
         with cols[idx]:
-            badge_class = f"score-badge-{rating(row['overall'])}"
+            badge_class = f"score-badge-{rating(row['Top Score'])}"
             st.markdown(f"""
             <div class="metric-card">
                 <div class="label">Rank #{idx+1}</div>
-                <div class="value">{row['stadium'].split()[0]}</div>
-                <div class="sub">{row['city']}</div>
+                <div class="value">{row['Stadium']}</div>
+                <div class="sub">{row['City']}</div>
                 <div class="sub" style="margin-top:0.5rem;">
-                    <span class="{badge_class} score-badge">{rating(row['overall'])}</span>
+                    <span class="{badge_class} score-badge">{rating_display(row['Top Score'])}</span>
                 </div>
                 <div style="margin-top:0.75rem; font-size:1.3rem; font-weight:700; color:#3b82f6;">
-                    {row['overall']:.1f}
+                    {row['Top Score']:.1f}
                 </div>
-                <div class="sub">Overall Score</div>
+                <div class="sub">Best Use Score ({row['Highest & Best Use']})</div>
             </div>
             """, unsafe_allow_html=True)
     
@@ -516,28 +268,44 @@ with tab1:
     st.markdown("### Market Overview")
     
     m1, m2, m3, m4 = st.columns(4)
-    m1.metric("Average Overall Score", f"{filtered['overall'].mean():.1f}")
-    m2.metric("Markets Rated BUY", f"{(filtered['overall'] >= 65).sum()}")
-    m3.metric("Median Income (Avg)", f"${filtered['median_income'].mean():,.0f}")
-    m4.metric("Avg Pop Growth", f"{filtered['pop_growth'].mean():.1%}")
     
-    # Rankings by asset class
+    # Calculate averages across all asset classes
+    avg_office = filtered['Office Score'].mean()
+    avg_retail = filtered['Retail Score'].mean()
+    avg_hosp = filtered['Hospitality Score'].mean()
+    avg_mf = filtered['Multifamily Score'].mean()
+    overall_avg = (avg_office + avg_retail + avg_hosp + avg_mf) / 4
+    
+    m1.metric("Average Score (All Assets)", f"{overall_avg:.1f}")
+    
+    # Count potential investments across all asset classes
+    potential_count = (
+        (filtered['Office Score'] >= 65).sum() +
+        (filtered['Retail Score'] >= 65).sum() +
+        (filtered['Hospitality Score'] >= 65).sum() +
+        (filtered['Multifamily Score'] >= 65).sum()
+    )
+    m2.metric("Potential Investment Opportunities", f"{potential_count}")
+    m3.metric("Total Markets Analyzed", f"{len(filtered)}")
+    m4.metric("Asset Classes", "4")
+    
+    # Asset class leaders
     st.markdown("### Asset Class Leaders")
     
     ac1, ac2, ac3, ac4 = st.columns(4)
     
     for col, asset, label in [
-        (ac1, "office", "Office"),
-        (ac2, "retail", "Retail"),
-        (ac3, "hospitality", "Hospitality"),
-        (ac4, "multifamily", "Multifamily")
+        (ac1, "Office Score", "Office"),
+        (ac2, "Retail Score", "Retail"),
+        (ac3, "Hospitality Score", "Hospitality"),
+        (ac4, "Multifamily Score", "Multifamily")
     ]:
         with col:
             top = filtered.nlargest(1, asset).iloc[0]
             st.markdown(f"""
             <div class="metric-card">
                 <div class="label">{label} Leader</div>
-                <div class="value" style="font-size:1.2rem;">{top['stadium'].split()[0]}</div>
+                <div class="value" style="font-size:1rem;">{top['Stadium']}</div>
                 <div class="sub">{top[asset]:.1f} Score</div>
             </div>
             """, unsafe_allow_html=True)
@@ -550,22 +318,22 @@ with tab2:
     
     asset_tabs = st.tabs(["Office", "Retail", "Hospitality", "Multifamily"])
     
-    def render_asset(tab, asset_key, asset_label, comp_key, pen_key):
+    def render_asset(tab, asset_col, asset_label):
         with tab:
             st.markdown(f"#### {asset_label} Investment Scores")
             
             # Sort by asset score
-            asset_df = filtered.sort_values(asset_key, ascending=False)
+            asset_df = filtered.sort_values(asset_col, ascending=False)
             
             # Create bar chart
             fig = go.Figure()
-            colors = [SPORT_COLORS.get(sport, "#64748b") for sport in asset_df["sport"]]
+            colors = [SPORT_COLORS.get(sport, "#64748b") for sport in asset_df["Sport"]]
             
             fig.add_trace(go.Bar(
-                x=asset_df["stadium"],
-                y=asset_df[asset_key],
+                x=asset_df["Stadium"],
+                y=asset_df[asset_col],
                 marker_color=colors,
-                text=asset_df[asset_key].round(1),
+                text=asset_df[asset_col].round(1),
                 textposition='outside',
                 textfont=dict(size=11, family="Inter", color="#0f172a"),
                 hovertemplate="<b>%{x}</b><br>Score: %{y:.1f}<extra></extra>",
@@ -573,9 +341,9 @@ with tab2:
             
             # Add threshold lines
             fig.add_hline(y=65, line_dash="dash", line_color="#10b981", 
-                         annotation_text="BUY Threshold", annotation_position="right")
+                         annotation_text="Potential Investment", annotation_position="right")
             fig.add_hline(y=50, line_dash="dash", line_color="#f59e0b",
-                         annotation_text="HOLD Threshold", annotation_position="right")
+                         annotation_text="More Information Needed", annotation_position="right")
             
             fig.update_layout(
                 height=400,
@@ -595,20 +363,20 @@ with tab2:
             top3_asset = asset_df.head(3)
             
             for idx, (_, row) in enumerate(top3_asset.iterrows(), 1):
-                col1, col2, col3 = st.columns([2, 1, 1])
+                col1, col2, col3 = st.columns([3, 2, 2])
                 with col1:
-                    st.markdown(f"**{idx}. {row['stadium']}**")
+                    st.markdown(f"**{idx}. {row['Stadium']}**")
                 with col2:
-                    badge_class = f"score-badge-{rating(row[asset_key])}"
-                    st.markdown(f'<span class="{badge_class} score-badge">{row[asset_key]:.1f}</span>', 
+                    badge_class = f"score-badge-{rating(row[asset_col])}"
+                    st.markdown(f'<span class="{badge_class} score-badge">{row[asset_col]:.1f}</span>', 
                                unsafe_allow_html=True)
                 with col3:
-                    st.caption(row['city'])
+                    st.caption(row['City'])
     
-    render_asset(asset_tabs[0], "office", "Office", None, None)
-    render_asset(asset_tabs[1], "retail", "Retail", None, None)
-    render_asset(asset_tabs[2], "hospitality", "Hospitality", None, None)
-    render_asset(asset_tabs[3], "multifamily", "Multifamily", None, None)
+    render_asset(asset_tabs[0], "Office Score", "Office")
+    render_asset(asset_tabs[1], "Retail Score", "Retail")
+    render_asset(asset_tabs[2], "Hospitality Score", "Hospitality")
+    render_asset(asset_tabs[3], "Multifamily Score", "Multifamily")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 3 – Comparative Analytics
@@ -617,27 +385,27 @@ with tab3:
     st.markdown("### Quadrant Analysis")
     st.info("Analysis compares asset class scores. Top-right quadrant represents strongest performance across both dimensions.")
     
-    def quadrant_chart(df, x_asset, y_asset, x_label, y_label, title):
+    def quadrant_chart(df, x_col, y_col, x_label, y_label, title):
         fig = go.Figure()
         
         for _, row in df.iterrows():
             fig.add_trace(go.Scatter(
-                x=[row[x_asset]],
-                y=[row[y_asset]],
+                x=[row[x_col]],
+                y=[row[y_col]],
                 mode="markers+text",
                 marker=dict(
                     size=16,
-                    color=SPORT_COLORS.get(row["sport"], "#64748b"),
+                    color=SPORT_COLORS.get(row["Sport"], "#64748b"),
                     line=dict(width=2, color="white")
                 ),
-                text=[row["stadium"].split()[0]],
+                text=[row["Stadium"].split()[0]],
                 textposition="top center",
                 textfont=dict(size=10, family="Inter"),
                 showlegend=False,
                 hovertemplate=(
-                    f"<b>{row['stadium']}</b><br>"
-                    f"{x_label}: {row[x_asset]:.1f}<br>"
-                    f"{y_label}: {row[y_asset]:.1f}<extra></extra>"
+                    f"<b>{row['Stadium']}</b><br>"
+                    f"{x_label}: {row[x_col]:.1f}<br>"
+                    f"{y_label}: {row[y_col]:.1f}<extra></extra>"
                 ),
             ))
         
@@ -660,18 +428,18 @@ with tab3:
     
     q1, q2 = st.columns(2)
     with q1:
-        st.plotly_chart(quadrant_chart(filtered, "retail", "multifamily",
+        st.plotly_chart(quadrant_chart(filtered, "Retail Score", "Multifamily Score",
             "Retail Score", "Multifamily Score", "Retail vs. Multifamily"), 
             use_container_width=True)
     with q2:
-        st.plotly_chart(quadrant_chart(filtered, "office", "hospitality",
+        st.plotly_chart(quadrant_chart(filtered, "Office Score", "Hospitality Score",
             "Office Score", "Hospitality Score", "Office vs. Hospitality"), 
             use_container_width=True)
     
     st.markdown("---")
     st.markdown("### Score Heatmap — All Stadiums × All Asset Classes")
     
-    heat = filtered[["stadium","office","retail","hospitality","multifamily"]].set_index("stadium")
+    heat = filtered[["Stadium","Office Score","Retail Score","Hospitality Score","Multifamily Score"]].set_index("Stadium")
     fig_heat = px.imshow(
         heat.round(1),
         color_continuous_scale=[[0,"#fee2e2"],[0.48,"#fef3c7"],[0.64,"#d1fae5"],[1,"#065f46"]],
@@ -682,9 +450,9 @@ with tab3:
         coloraxis_colorbar=dict(
             title="Score", 
             tickvals=[0,50,65,100],
-            ticktext=["Avoid","Hold","Buy","Best"]
+            ticktext=["Avoid","More Info","Potential","Best"]
         ),
-        margin=dict(l=180, r=60, t=20, b=40), 
+        margin=dict(l=200, r=60, t=20, b=40), 
         font=dict(family="Inter"),
     )
     st.plotly_chart(fig_heat, use_container_width=True)
@@ -694,19 +462,30 @@ with tab3:
 # ══════════════════════════════════════════════════════════════════════════════
 with tab4:
     st.markdown("### Investment Scores — Complete Dataset")
+    st.caption("Data sourced directly from HBU Leaderboard analysis")
     
-    tbl = filtered[["stadium","city","sport","team","overall","office","retail",
-                    "hospitality","multifamily","pop_growth","median_income"]].copy()
-    tbl.columns = ["Stadium","City","Sport","Team","Overall","Office","Retail",
-                   "Hospitality","Multifamily","Pop Growth","Median Income"]
-    tbl["Rating"] = tbl["Overall"].apply(rating)
-    tbl = tbl.sort_values("Overall", ascending=False)
+    # Prepare table - use exact data from Excel
+    tbl = filtered[["Stadium", "City", "Sport", "Team", "Office Score", "Retail Score", 
+                    "Hospitality Score", "Multifamily Score", "Highest & Best Use", "Top Score"]].copy()
+    
+    # Add rating columns for each asset class
+    tbl["Office Rating"] = tbl["Office Score"].apply(rating_display)
+    tbl["Retail Rating"] = tbl["Retail Score"].apply(rating_display)
+    tbl["Hospitality Rating"] = tbl["Hospitality Score"].apply(rating_display)
+    tbl["Multifamily Rating"] = tbl["Multifamily Score"].apply(rating_display)
+    
+    # Sort by top score
+    tbl = tbl.sort_values("Top Score", ascending=False)
     
     def hl(val):
+        """Highlight cells based on score"""
         if isinstance(val, str):
-            if val == "BUY":   return "background-color:#d1fae5;color:#065f46;font-weight:700"
-            if val == "HOLD":  return "background-color:#fef3c7;color:#78350f;font-weight:700"
-            if val == "AVOID": return "background-color:#fee2e2;color:#991b1b;font-weight:700"
+            if val == "Potential Investment":   
+                return "background-color:#d1fae5;color:#065f46;font-weight:700"
+            if val == "More Information Needed":  
+                return "background-color:#fef3c7;color:#78350f;font-weight:700"
+            if val == "Avoid This Asset Class": 
+                return "background-color:#fee2e2;color:#991b1b;font-weight:700"
         try:
             fv = float(val)
             if fv >= 65: return "background-color:#d1fae5"
@@ -716,12 +495,16 @@ with tab4:
     
     st.dataframe(
         tbl.style.format({
-            "Overall":"{:.1f}","Office":"{:.1f}","Retail":"{:.1f}",
-            "Hospitality":"{:.1f}","Multifamily":"{:.1f}",
-            "Pop Growth": lambda x: f"{x:.1%}" if pd.notna(x) else "N/A",
-            "Median Income": lambda x: f"${x:,.0f}" if pd.notna(x) else "N/A",
-        }).applymap(hl, subset=["Overall","Office","Retail","Hospitality","Multifamily","Rating"]),
-        use_container_width=True, height=500,
+            "Office Score": "{:.1f}",
+            "Retail Score": "{:.1f}",
+            "Hospitality Score": "{:.1f}",
+            "Multifamily Score": "{:.1f}",
+            "Top Score": "{:.1f}",
+        }).applymap(hl, subset=["Office Score", "Retail Score", "Hospitality Score", 
+                                 "Multifamily Score", "Top Score", "Office Rating", 
+                                 "Retail Rating", "Hospitality Rating", "Multifamily Rating"]),
+        use_container_width=True, 
+        height=500,
     )
     
     st.download_button(
@@ -733,12 +516,17 @@ with tab4:
     
     st.markdown("---")
     st.markdown("""<div class="score-explainer">
-    <strong>Methodology:</strong> Investment scores are calculated using weighted metrics across multiple 
-    real estate fundamentals including vacancy rates, rent growth, cap rates, occupancy, and absorption. 
-    Scores are derived from the uploaded Excel template which applies piecewise-linear interpolation 
-    against absolute industry benchmarks. The overall score represents a balanced assessment across 
-    all four asset classes (Office, Retail, Hospitality, Multifamily).
+    <strong>About This Data:</strong> All scores displayed in this dashboard are sourced directly from 
+    the uploaded Excel template without modification. The analysis reflects weighted investment scores 
+    calculated using comprehensive real estate metrics including vacancy rates, rent growth, cap rates, 
+    occupancy, and absorption across a 1-mile radius of each stadium.
     <br><br>
+    <strong>Investment Criteria:</strong>
+    <ul>
+        <li><strong>Potential Investment</strong> (Score ≥ 65): Asset class shows strong fundamentals and investment potential</li>
+        <li><strong>More Information Needed</strong> (Score 50-64): Asset class requires additional analysis before investment decision</li>
+        <li><strong>Avoid This Asset Class</strong> (Score < 50): Asset class shows weak fundamentals, not recommended for investment</li>
+    </ul>
     <strong>Data Source:</strong> CoStar Analytics, 1-Mile Custom Radius around each stadium, Q1 2026.
     <br><br>
     <strong>Disclaimer:</strong> This analysis is for informational purposes only and does not constitute 
