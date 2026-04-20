@@ -9,7 +9,6 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 import numpy as np
-import openpyxl
 
 st.set_page_config(
     page_title="Stadium RE Investment Analyzer",
@@ -70,90 +69,46 @@ div[data-testid="stTabs"] button { font-weight:600; font-size:0.95rem; }
 """, unsafe_allow_html=True)
 
 # ── Data Loading Functions ────────────────────────────────────────────────────
-def load_excel_data(file_obj):
+def load_matrix_from_excel(file_obj):
     """
-    Load data from Excel file - reads from Index Calculation sheet and aggregates scores
+    Load data directly from the Matrix tab (last sheet) in the Excel file.
+    NO CALCULATIONS - just reads the scores as-is.
     """
     try:
-        # Read Index Calculation sheet
-        df_index = pd.read_excel(file_obj, sheet_name='Index Calculation', header=3)
+        # Get all sheet names
+        xl = pd.ExcelFile(file_obj)
         
-        # Read Asset Class Weighting Matrix
-        df_weights = pd.read_excel(file_obj, sheet_name='Asset Class Weighting Matrix', header=3)
+        # Find the Matrix sheet (should be the last one or named "Matrix")
+        matrix_sheet = None
+        for sheet_name in xl.sheet_names:
+            if 'matrix' in sheet_name.lower():
+                matrix_sheet = sheet_name
+                break
         
-        # Filter for stadium data (exclude benchmarks)
-        stadiums = ['MBS', 'Braves', 'American Airlines Center', 'AT&T Stadium', 
-                   'Bank of America Properties', 'Spectrum Center Properties', 
-                   'T Mobile Arena', 'Allegiant Stadium Properties']
+        # If no Matrix sheet found, use the last sheet
+        if matrix_sheet is None:
+            matrix_sheet = xl.sheet_names[-1]
         
-        df_stadiums = df_index[df_index['Stadium/Market'].isin(stadiums)].copy()
+        # Read the Matrix sheet - header is on row 9 (index 8)
+        df = pd.read_excel(file_obj, sheet_name=matrix_sheet, header=8)
         
-        # Get weights for each metric and asset class
-        weights_dict = {}
-        for idx, row in df_weights.iterrows():
-            metric = row.iloc[0]  # First column is metric name
-            if pd.notna(metric):
-                weights_dict[metric] = {
-                    'Office': row.iloc[1] if pd.notna(row.iloc[1]) else 0,
-                    'Retail': row.iloc[2] if pd.notna(row.iloc[2]) else 0,
-                    'Hospitality': row.iloc[3] if pd.notna(row.iloc[3]) else 0,
-                    'Multifamily': row.iloc[4] if pd.notna(row.iloc[4]) else 0,
-                }
+        # Keep only the relevant columns
+        df_clean = df[['Stadium/Market', 'Office Score', 'Retail Score', 
+                       'Hospitality Score', 'Multifamily Score']].copy()
         
-        # Calculate weighted scores for each stadium and product type
-        results = []
+        # Remove any rows with NaN in Stadium/Market
+        df_clean = df_clean[df_clean['Stadium/Market'].notna()].copy()
         
-        for stadium in stadiums:
-            stadium_data = df_stadiums[df_stadiums['Stadium/Market'] == stadium]
-            
-            scores = {'Stadium/Market': stadium}
-            
-            for product_type in ['Office', 'Retail', 'Hospitality', 'Multifamily']:
-                product_data = stadium_data[stadium_data['Product Type'] == product_type]
-                
-                if len(product_data) > 0:
-                    row_data = product_data.iloc[0]
-                    
-                    # Calculate weighted score
-                    total_score = 0
-                    total_weight = 0
-                    
-                    for metric, weights in weights_dict.items():
-                        weight = weights.get(product_type, 0)
-                        if weight > 0 and metric in row_data.index:
-                            value = row_data[metric]
-                            if pd.notna(value):
-                                total_score += value * weight
-                                total_weight += weight
-                    
-                    # Normalize by total weight
-                    final_score = total_score if total_weight == 0 else total_score / total_weight if total_weight > 1 else total_score
-                    scores[f'{product_type} Score'] = round(final_score, 0)
-                else:
-                    scores[f'{product_type} Score'] = 0
-            
-            results.append(scores)
+        # Round scores to whole numbers for display
+        df_clean['Office Score'] = df_clean['Office Score'].round(0)
+        df_clean['Retail Score'] = df_clean['Retail Score'].round(0)
+        df_clean['Hospitality Score'] = df_clean['Hospitality Score'].round(0)
+        df_clean['Multifamily Score'] = df_clean['Multifamily Score'].round(0)
         
-        df_result = pd.DataFrame(results)
-        
-        # Map stadium names to full display names
-        name_mapping = {
-            'MBS': 'Mercedes-Benz Stadium (Atlanta)',
-            'Braves': 'Truist Park (Atlanta)',
-            'Bank of America Properties': 'Bank of America Stadium (Charlotte)',
-            'Spectrum Center Properties': 'Spectrum Center (Charlotte)',
-            'Allegiant Stadium Properties': 'Allegiant Stadium (Las Vegas)',
-            'T Mobile Arena': 'T-Mobile Arena (Las Vegas)',
-            'American Airlines Center': 'American Airlines Center (DFW)',
-            'AT&T Stadium': 'AT&T Stadium (DFW)'
-        }
-        
-        df_result['Stadium/Market'] = df_result['Stadium/Market'].map(name_mapping)
-        
-        return df_result
+        return df_clean
         
     except Exception as e:
-        st.error(f"Error loading Excel file: {str(e)}")
+        st.error(f"Error loading Matrix tab from Excel: {str(e)}")
         import traceback
         st.error(f"Details: {traceback.format_exc()}")
         return None
@@ -161,24 +116,24 @@ def load_excel_data(file_obj):
 def create_default_data():
     """Create default data with exact Matrix scores"""
     return pd.DataFrame([
-        {'Stadium/Market': 'Mercedes-Benz Stadium (Atlanta)', 'Office Score': 68, 'Retail Score': 74, 'Hospitality Score': 131, 'Multifamily Score': 49},
+        {'Stadium/Market': 'Mercedez Benz (Atlanta)', 'Office Score': 68, 'Retail Score': 74, 'Hospitality Score': 131, 'Multifamily Score': 49},
         {'Stadium/Market': 'Truist Park (Atlanta)', 'Office Score': 82, 'Retail Score': 128, 'Hospitality Score': 108, 'Multifamily Score': 46},
         {'Stadium/Market': 'American Airlines Center (DFW)', 'Office Score': 96, 'Retail Score': 98, 'Hospitality Score': 137, 'Multifamily Score': 79},
         {'Stadium/Market': 'AT&T Stadium (DFW)', 'Office Score': 67, 'Retail Score': 110, 'Hospitality Score': 27, 'Multifamily Score': 80},
-        {'Stadium/Market': 'Bank of America Stadium (Charlotte)', 'Office Score': 84, 'Retail Score': 82, 'Hospitality Score': 127, 'Multifamily Score': 73},
-        {'Stadium/Market': 'Spectrum Center (Charlotte)', 'Office Score': 84, 'Retail Score': 51, 'Hospitality Score': 87, 'Multifamily Score': 71},
-        {'Stadium/Market': 'T-Mobile Arena (Las Vegas)', 'Office Score': 55, 'Retail Score': 84, 'Hospitality Score': 79, 'Multifamily Score': 161},
-        {'Stadium/Market': 'Allegiant Stadium (Las Vegas)', 'Office Score': 65, 'Retail Score': 30, 'Hospitality Score': 62, 'Multifamily Score': 11},
+        {'Stadium/Market': 'Bank of America Properties (Charlotte)', 'Office Score': 84, 'Retail Score': 82, 'Hospitality Score': 127, 'Multifamily Score': 73},
+        {'Stadium/Market': 'Spectrum Center Properties (Charlotte)', 'Office Score': 84, 'Retail Score': 51, 'Hospitality Score': 87, 'Multifamily Score': 71},
+        {'Stadium/Market': 'T Mobile Arena (Las Vegas)', 'Office Score': 55, 'Retail Score': 84, 'Hospitality Score': 79, 'Multifamily Score': 161},
+        {'Stadium/Market': 'Allegiant Stadium Properties (Las Vegas)', 'Office Score': 65, 'Retail Score': 30, 'Hospitality Score': 62, 'Multifamily Score': 11},
     ])
 
-# Enhanced stadium metadata
+# Stadium metadata for visualization
 STADIUM_META = {
-    "Mercedes-Benz Stadium (Atlanta)": {"city": "Atlanta, GA", "team": "Atlanta Falcons / Atlanta United", "sport": "NFL/MLS", "short": "Mercedes-Benz"},
+    "Mercedez Benz (Atlanta)": {"city": "Atlanta, GA", "team": "Atlanta Falcons / Atlanta United", "sport": "NFL/MLS", "short": "Mercedes-Benz"},
     "Truist Park (Atlanta)": {"city": "Atlanta, GA", "team": "Atlanta Braves", "sport": "MLB", "short": "Truist Park"},
-    "Bank of America Stadium (Charlotte)": {"city": "Charlotte, NC", "team": "Carolina Panthers", "sport": "NFL", "short": "Bank of America"},
-    "Spectrum Center (Charlotte)": {"city": "Charlotte, NC", "team": "Charlotte Hornets", "sport": "NBA", "short": "Spectrum Center"},
-    "Allegiant Stadium (Las Vegas)": {"city": "Las Vegas, NV", "team": "Las Vegas Raiders", "sport": "NFL", "short": "Allegiant"},
-    "T-Mobile Arena (Las Vegas)": {"city": "Las Vegas, NV", "team": "Vegas Golden Knights", "sport": "NHL", "short": "T-Mobile"},
+    "Bank of America Properties (Charlotte)": {"city": "Charlotte, NC", "team": "Carolina Panthers", "sport": "NFL", "short": "Bank of America"},
+    "Spectrum Center Properties (Charlotte)": {"city": "Charlotte, NC", "team": "Charlotte Hornets", "sport": "NBA", "short": "Spectrum Center"},
+    "Allegiant Stadium Properties (Las Vegas)": {"city": "Las Vegas, NV", "team": "Las Vegas Raiders", "sport": "NFL", "short": "Allegiant"},
+    "T Mobile Arena (Las Vegas)": {"city": "Las Vegas, NV", "team": "Vegas Golden Knights", "sport": "NHL", "short": "T-Mobile"},
     "American Airlines Center (DFW)": {"city": "Dallas, TX", "team": "Dallas Mavericks / Dallas Stars", "sport": "NBA/NHL", "short": "American Airlines"},
     "AT&T Stadium (DFW)": {"city": "Arlington, TX", "team": "Dallas Cowboys", "sport": "NFL", "short": "AT&T Stadium"},
 }
@@ -189,13 +144,13 @@ SPORT_COLORS = {
 }
 
 def rating(score):
-    """Convert score to rating category - UPDATED CRITERIA"""
+    """Convert score to rating category"""
     if score > 100: return "POTENTIAL"
     if score >= 60: return "INFO"
     return "AVOID"
 
 def rating_display(score):
-    """Convert score to display text - UPDATED CRITERIA"""
+    """Convert score to display text"""
     if score > 100: return "Potential Investment"
     if score >= 60: return "More Information Needed"
     return "Avoid This Asset Class"
@@ -205,24 +160,24 @@ def rating_display(score):
 # ══════════════════════════════════════════════════════════════════════════════
 with st.sidebar:
     st.markdown("### Upload Data File")
-    st.markdown("Upload your Excel template to analyze stadium district investments")
+    st.markdown("Upload your Excel template with Matrix tab containing final scores")
     
     uploaded_file = st.file_uploader(
         "Choose Excel file",
         type=['xlsx'],
-        help="Upload the PracticumRealEstateProject.xlsx template"
+        help="Upload Excel file with Matrix tab (last sheet)"
     )
     
     if uploaded_file is not None:
-        with st.spinner("Loading data from Excel..."):
-            df = load_excel_data(uploaded_file)
+        with st.spinner("Loading Matrix data from Excel..."):
+            df = load_matrix_from_excel(uploaded_file)
         
         if df is None or len(df) == 0:
-            st.error("Could not load data from Excel. Using default scores.")
+            st.error("Could not load Matrix data. Using default scores.")
             df = create_default_data()
             data_loaded = True
         else:
-            st.success(f"✓ Loaded data for {len(df)} stadiums from Excel")
+            st.success(f"✓ Loaded {len(df)} stadiums from Matrix tab")
             data_loaded = True
     else:
         st.info("Using default Matrix scores")
@@ -653,7 +608,7 @@ with tab4:
 # ══════════════════════════════════════════════════════════════════════════════
 with tab5:
     st.markdown("### Investment Scores — Complete Dataset")
-    st.caption("Data sourced directly from Excel analysis - exact scores without modification")
+    st.caption("Data sourced directly from Matrix tab - exact scores without modification")
     
     # Prepare table
     tbl = filtered[["Stadium/Market", "City", "Sport", "Team", "Office Score", "Retail Score", 
@@ -705,9 +660,9 @@ with tab5:
     
     st.markdown("---")
     st.markdown("""<div class="score-explainer">
-    <strong>About This Data:</strong> All scores displayed in this dashboard are calculated from 
-    the uploaded Excel template using weighted metrics across multiple real estate fundamentals. 
-    The analysis reflects comprehensive investment scoring for each stadium and asset class combination.
+    <strong>About This Data:</strong> All scores displayed in this dashboard are sourced directly from 
+    the Matrix tab (last sheet) of the uploaded Excel file without any modification or recalculation. 
+    These scores represent the final weighted investment analysis for each stadium and asset class combination.
     <br><br>
     <strong>Investment Criteria:</strong>
     <ul>
