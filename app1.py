@@ -1,5 +1,5 @@
 """
-Stadium District Real Estate Investment Analyzer v5.0
+Stadium District Real Estate Investment Analyzer - Final Version
 Run: streamlit run app_final.py
 Requires: pip install streamlit plotly pandas openpyxl
 """
@@ -10,7 +10,6 @@ import plotly.graph_objects as go
 import plotly.express as px
 import numpy as np
 import openpyxl
-from io import BytesIO
 
 st.set_page_config(
     page_title="Stadium RE Investment Analyzer",
@@ -71,80 +70,96 @@ div[data-testid="stTabs"] button { font-weight:600; font-size:0.95rem; }
 """, unsafe_allow_html=True)
 
 # ── Data Loading Functions ────────────────────────────────────────────────────
-def load_matrix_data(file_obj):
+def load_excel_data(file_obj):
     """
-    Load data from Matrix tab or create from hardcoded values.
-    Expects columns: Stadium/Market, Office Score, Retail Score, Hospitality Score, Multifamily Score
+    Load data from Excel file - reads from Index Calculation sheet and aggregates scores
     """
     try:
-        wb = openpyxl.load_workbook(file_obj, data_only=True)
+        # Read Index Calculation sheet
+        df_index = pd.read_excel(file_obj, sheet_name='Index Calculation', header=3)
         
-        # Try to find Matrix sheet (case-insensitive)
-        matrix_sheet = None
-        for sheet_name in wb.sheetnames:
-            if 'matrix' in sheet_name.lower():
-                matrix_sheet = sheet_name
-                break
+        # Read Asset Class Weighting Matrix
+        df_weights = pd.read_excel(file_obj, sheet_name='Asset Class Weighting Matrix', header=3)
         
-        if matrix_sheet:
-            ws = wb[matrix_sheet]
+        # Filter for stadium data (exclude benchmarks)
+        stadiums = ['MBS', 'Braves', 'American Airlines Center', 'AT&T Stadium', 
+                   'Bank of America Properties', 'Spectrum Center Properties', 
+                   'T Mobile Arena', 'Allegiant Stadium Properties']
+        
+        df_stadiums = df_index[df_index['Stadium/Market'].isin(stadiums)].copy()
+        
+        # Get weights for each metric and asset class
+        weights_dict = {}
+        for idx, row in df_weights.iterrows():
+            metric = row.iloc[0]  # First column is metric name
+            if pd.notna(metric):
+                weights_dict[metric] = {
+                    'Office': row.iloc[1] if pd.notna(row.iloc[1]) else 0,
+                    'Retail': row.iloc[2] if pd.notna(row.iloc[2]) else 0,
+                    'Hospitality': row.iloc[3] if pd.notna(row.iloc[3]) else 0,
+                    'Multifamily': row.iloc[4] if pd.notna(row.iloc[4]) else 0,
+                }
+        
+        # Calculate weighted scores for each stadium and product type
+        results = []
+        
+        for stadium in stadiums:
+            stadium_data = df_stadiums[df_stadiums['Stadium/Market'] == stadium]
             
-            # Find header row
-            header_row = None
-            for row_idx in range(1, 20):
-                row = ws[row_idx]
-                row_values = [cell.value for cell in row[:10]]
-                if any('Stadium' in str(v) or 'Market' in str(v) for v in row_values if v):
-                    header_row = row_idx
-                    break
+            scores = {'Stadium/Market': stadium}
             
-            if header_row:
-                # Read data starting from header
-                data = []
-                headers = [cell.value for cell in ws[header_row][:5]]
+            for product_type in ['Office', 'Retail', 'Hospitality', 'Multifamily']:
+                product_data = stadium_data[stadium_data['Product Type'] == product_type]
                 
-                for row_idx in range(header_row + 1, ws.max_row + 1):
-                    row = ws[row_idx]
-                    stadium = row[0].value
-                    if stadium and str(stadium).strip():
-                        data.append({
-                            'Stadium/Market': str(stadium).strip(),
-                            'Office Score': float(row[1].value) if row[1].value else 0,
-                            'Retail Score': float(row[2].value) if row[2].value else 0,
-                            'Hospitality Score': float(row[3].value) if row[3].value else 0,
-                            'Multifamily Score': float(row[4].value) if row[4].value else 0,
-                        })
-                
-                if data:
-                    return pd.DataFrame(data)
+                if len(product_data) > 0:
+                    row_data = product_data.iloc[0]
+                    
+                    # Calculate weighted score
+                    total_score = 0
+                    total_weight = 0
+                    
+                    for metric, weights in weights_dict.items():
+                        weight = weights.get(product_type, 0)
+                        if weight > 0 and metric in row_data.index:
+                            value = row_data[metric]
+                            if pd.notna(value):
+                                total_score += value * weight
+                                total_weight += weight
+                    
+                    # Normalize by total weight
+                    final_score = total_score if total_weight == 0 else total_score / total_weight if total_weight > 1 else total_score
+                    scores[f'{product_type} Score'] = round(final_score, 0)
+                else:
+                    scores[f'{product_type} Score'] = 0
+            
+            results.append(scores)
         
-        # If no Matrix sheet found, try reading as CSV-like from any sheet
-        return load_from_any_format(file_obj)
+        df_result = pd.DataFrame(results)
+        
+        # Map stadium names to full display names
+        name_mapping = {
+            'MBS': 'Mercedes-Benz Stadium (Atlanta)',
+            'Braves': 'Truist Park (Atlanta)',
+            'Bank of America Properties': 'Bank of America Stadium (Charlotte)',
+            'Spectrum Center Properties': 'Spectrum Center (Charlotte)',
+            'Allegiant Stadium Properties': 'Allegiant Stadium (Las Vegas)',
+            'T Mobile Arena': 'T-Mobile Arena (Las Vegas)',
+            'American Airlines Center': 'American Airlines Center (DFW)',
+            'AT&T Stadium': 'AT&T Stadium (DFW)'
+        }
+        
+        df_result['Stadium/Market'] = df_result['Stadium/Market'].map(name_mapping)
+        
+        return df_result
         
     except Exception as e:
-        st.error(f"Error reading Excel file: {e}")
-        return None
-
-def load_from_any_format(file_obj):
-    """Try to load data from Excel file in various formats"""
-    try:
-        # Try reading as pandas first
-        df = pd.read_excel(file_obj, sheet_name=None)
-        
-        # Look for a sheet with the right column structure
-        for sheet_name, sheet_df in df.items():
-            if 'Stadium' in str(sheet_df.columns) or 'Market' in str(sheet_df.columns):
-                # Find the right columns
-                stadium_col = [c for c in sheet_df.columns if 'Stadium' in str(c) or 'Market' in str(c)]
-                if stadium_col:
-                    return sheet_df
-        
-        return None
-    except:
+        st.error(f"Error loading Excel file: {str(e)}")
+        import traceback
+        st.error(f"Details: {traceback.format_exc()}")
         return None
 
 def create_default_data():
-    """Create default data with exact scores from Matrix"""
+    """Create default data with exact Matrix scores"""
     return pd.DataFrame([
         {'Stadium/Market': 'Mercedes-Benz Stadium (Atlanta)', 'Office Score': 68, 'Retail Score': 74, 'Hospitality Score': 131, 'Multifamily Score': 49},
         {'Stadium/Market': 'Truist Park (Atlanta)', 'Office Score': 82, 'Retail Score': 128, 'Hospitality Score': 108, 'Multifamily Score': 46},
@@ -174,15 +189,15 @@ SPORT_COLORS = {
 }
 
 def rating(score):
-    """Convert score to rating category"""
-    if score >= 65: return "POTENTIAL"
-    if score >= 50: return "INFO"
+    """Convert score to rating category - UPDATED CRITERIA"""
+    if score > 100: return "POTENTIAL"
+    if score >= 60: return "INFO"
     return "AVOID"
 
 def rating_display(score):
-    """Convert score to display text"""
-    if score >= 65: return "Potential Investment"
-    if score >= 50: return "More Information Needed"
+    """Convert score to display text - UPDATED CRITERIA"""
+    if score > 100: return "Potential Investment"
+    if score >= 60: return "More Information Needed"
     return "Avoid This Asset Class"
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -190,22 +205,25 @@ def rating_display(score):
 # ══════════════════════════════════════════════════════════════════════════════
 with st.sidebar:
     st.markdown("### Upload Data File")
-    st.markdown("Upload your Excel file with Matrix tab containing investment scores")
+    st.markdown("Upload your Excel template to analyze stadium district investments")
     
     uploaded_file = st.file_uploader(
         "Choose Excel file",
         type=['xlsx'],
-        help="Upload Excel file with Stadium/Market scores"
+        help="Upload the PracticumRealEstateProject.xlsx template"
     )
     
     if uploaded_file is not None:
-        df = load_matrix_data(uploaded_file)
+        with st.spinner("Loading data from Excel..."):
+            df = load_excel_data(uploaded_file)
+        
         if df is None or len(df) == 0:
-            st.warning("Could not find Matrix data. Using default scores.")
+            st.error("Could not load data from Excel. Using default scores.")
             df = create_default_data()
+            data_loaded = True
         else:
-            st.success(f"Loaded data for {len(df)} stadiums from Matrix")
-        data_loaded = True
+            st.success(f"✓ Loaded data for {len(df)} stadiums from Excel")
+            data_loaded = True
     else:
         st.info("Using default Matrix scores")
         df = create_default_data()
@@ -236,15 +254,15 @@ with st.sidebar:
         st.markdown("### Filters")
         sports_filter = st.multiselect(
             "Sport",
-            options=df['Sport'].unique().tolist(),
-            default=df['Sport'].unique().tolist()
+            options=sorted(df['Sport'].unique().tolist()),
+            default=sorted(df['Sport'].unique().tolist())
         )
         
         st.markdown("---")
         st.markdown("### Investment Criteria")
-        st.caption("**Potential Investment**: Score ≥ 65")
-        st.caption("**More Information Needed**: Score 50-64")
-        st.caption("**Avoid This Asset Class**: Score < 50")
+        st.caption("**Potential Investment**: Score > 100")
+        st.caption("**More Information Needed**: Score 60-100")
+        st.caption("**Avoid This Asset Class**: Score < 60")
 
 # Apply filters
 if data_loaded and len(df) > 0:
@@ -263,7 +281,7 @@ st.markdown(f"""
     <div class="subtitle-row">
         <span class="pill">{len(filtered)} Stadiums Analyzed</span>
         <span class="pill">4 Asset Classes</span>
-        <span class="pill">Matrix Scores</span>
+        <span class="pill">CoStar Analytics Q1 2026</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -321,10 +339,10 @@ with tab1:
     m1.metric("Average Score (All Assets)", f"{overall_avg:.0f}")
     
     potential_count = (
-        (filtered['Office Score'] >= 65).sum() +
-        (filtered['Retail Score'] >= 65).sum() +
-        (filtered['Hospitality Score'] >= 65).sum() +
-        (filtered['Multifamily Score'] >= 65).sum()
+        (filtered['Office Score'] > 100).sum() +
+        (filtered['Retail Score'] > 100).sum() +
+        (filtered['Hospitality Score'] > 100).sum() +
+        (filtered['Multifamily Score'] > 100).sum()
     )
     m2.metric("Potential Investment Opportunities", f"{potential_count}")
     m3.metric("Total Markets Analyzed", f"{len(filtered)}")
@@ -378,10 +396,10 @@ with tab2:
                 hovertemplate="<b>%{x}</b><br>Score: %{y:.0f}<extra></extra>",
             ))
             
-            fig.add_hline(y=65, line_dash="dash", line_color="#10b981", 
-                         annotation_text="Potential Investment", annotation_position="right")
-            fig.add_hline(y=50, line_dash="dash", line_color="#f59e0b",
-                         annotation_text="More Information Needed", annotation_position="right")
+            fig.add_hline(y=100, line_dash="dash", line_color="#10b981", 
+                         annotation_text="Potential Investment (>100)", annotation_position="right")
+            fig.add_hline(y=60, line_dash="dash", line_color="#f59e0b",
+                         annotation_text="More Info Needed (60-100)", annotation_position="right")
             
             fig.update_layout(
                 height=400,
@@ -580,8 +598,10 @@ with tab4:
                 ),
             ))
         
-        fig.add_hline(y=65, line_dash="dash", line_color="#10b981", opacity=0.5)
-        fig.add_vline(x=65, line_dash="dash", line_color="#10b981", opacity=0.5)
+        fig.add_hline(y=100, line_dash="dash", line_color="#10b981", opacity=0.5)
+        fig.add_vline(x=100, line_dash="dash", line_color="#10b981", opacity=0.5)
+        fig.add_hline(y=60, line_dash="dash", line_color="#f59e0b", opacity=0.5)
+        fig.add_vline(x=60, line_dash="dash", line_color="#f59e0b", opacity=0.5)
         
         fig.update_layout(
             title=title,
@@ -613,15 +633,15 @@ with tab4:
     heat = filtered[["Stadium/Market","Office Score","Retail Score","Hospitality Score","Multifamily Score"]].set_index("Stadium/Market")
     fig_heat = px.imshow(
         heat.round(0),
-        color_continuous_scale=[[0,"#fee2e2"],[0.28,"#fef3c7"],[0.36,"#d1fae5"],[1,"#065f46"]],
+        color_continuous_scale=[[0,"#fee2e2"],[0.33,"#fef3c7"],[0.56,"#d1fae5"],[1,"#065f46"]],
         zmin=0, zmax=180, text_auto=".0f", aspect="auto", labels=dict(color="Score"),
     )
     fig_heat.update_layout(
         height=400, paper_bgcolor="white",
         coloraxis_colorbar=dict(
             title="Score", 
-            tickvals=[0,50,65,120,180],
-            ticktext=["0","50","65","120","180"]
+            tickvals=[0,60,100,150,180],
+            ticktext=["0","60","100","150","180"]
         ),
         margin=dict(l=250, r=60, t=20, b=40), 
         font=dict(family="Inter"),
@@ -633,7 +653,7 @@ with tab4:
 # ══════════════════════════════════════════════════════════════════════════════
 with tab5:
     st.markdown("### Investment Scores — Complete Dataset")
-    st.caption("Data sourced directly from Matrix tab - exact scores without modification")
+    st.caption("Data sourced directly from Excel analysis - exact scores without modification")
     
     # Prepare table
     tbl = filtered[["Stadium/Market", "City", "Sport", "Team", "Office Score", "Retail Score", 
@@ -657,8 +677,8 @@ with tab5:
                 return "background-color:#fee2e2;color:#991b1b;font-weight:700"
         try:
             fv = float(val)
-            if fv >= 65: return "background-color:#d1fae5"
-            if fv >= 50: return "background-color:#fef3c7"
+            if fv > 100: return "background-color:#d1fae5"
+            if fv >= 60: return "background-color:#fef3c7"
             return "background-color:#fee2e2"
         except: return ""
     
@@ -679,23 +699,23 @@ with tab5:
     st.download_button(
         "Download Full Dataset (CSV)",
         data=tbl.to_csv(index=False),
-        file_name="stadium_matrix_scores.csv",
+        file_name="stadium_investment_scores.csv",
         mime="text/csv"
     )
     
     st.markdown("---")
     st.markdown("""<div class="score-explainer">
-    <strong>About This Data:</strong> All scores displayed in this dashboard are sourced directly from 
-    the Matrix tab of the uploaded Excel file without any modification or recalculation. These scores represent
-    the final weighted investment analysis for each stadium and asset class combination.
+    <strong>About This Data:</strong> All scores displayed in this dashboard are calculated from 
+    the uploaded Excel template using weighted metrics across multiple real estate fundamentals. 
+    The analysis reflects comprehensive investment scoring for each stadium and asset class combination.
     <br><br>
     <strong>Investment Criteria:</strong>
     <ul>
-        <li><strong>Potential Investment</strong> (Score ≥ 65): Asset class shows strong fundamentals and investment potential</li>
-        <li><strong>More Information Needed</strong> (Score 50-64): Asset class requires additional analysis before investment decision</li>
-        <li><strong>Avoid This Asset Class</strong> (Score < 50): Asset class shows weak fundamentals, not recommended for investment</li>
+        <li><strong>Potential Investment</strong> (Score > 100): Asset class shows exceptional fundamentals and strong investment potential</li>
+        <li><strong>More Information Needed</strong> (Score 60-100): Asset class shows moderate performance and requires additional analysis before investment decision</li>
+        <li><strong>Avoid This Asset Class</strong> (Score < 60): Asset class shows weak fundamentals, not recommended for investment</li>
     </ul>
-    <strong>Data Source:</strong> Matrix analysis based on CoStar Analytics, 1-Mile Custom Radius around each stadium.
+    <strong>Data Source:</strong> CoStar Analytics, 1-Mile Custom Radius around each stadium, Q1 2026.
     <br><br>
     <strong>Disclaimer:</strong> This analysis is for informational purposes only and does not constitute 
     investment advice. Please consult with qualified financial and real estate professionals before making 
