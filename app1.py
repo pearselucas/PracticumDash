@@ -113,9 +113,9 @@ def load_excel_scores(file_obj):
             stadium_map = {
                 'MBS': 'Mercedes-Benz Stadium',
                 'Braves': 'Truist Park',
-                'Bank of America Properties': 'Bank of America Stadium',
-                'Spectrum Center Properties': 'Spectrum Center',
-                'Allegiant Stadium Properties': 'Allegiant Stadium',
+                'Bank of America Stadium': 'Bank of America Stadium',
+                'Spectrum Center': 'Spectrum Center',
+                'Allegiant Stadium': 'Allegiant Stadium',
                 'T Mobile Arena': 'T-Mobile Arena',
                 'American Airlines Center': 'American Airlines Center',
                 'AT&T Stadium': 'AT&T Stadium'
@@ -424,9 +424,9 @@ with st.sidebar:
     
     st.markdown("---")
     st.markdown("### Investment Criteria")
-    st.caption("**BUY**: Score ≥ 65")
-    st.caption("**HOLD**: Score 50-64")
-    st.caption("**AVOID**: Score < 50")
+    st.caption("**Potential Investment **: Score ≥ 65")
+    st.caption("**More Information Needed**: Score 50-64")
+    st.caption("**Avoid this Investment**: Score < 50")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # COMPUTE SCORES
