@@ -251,8 +251,8 @@ def load_weights_and_index_data(file_obj):
         
         # Filter for stadium data only
         stadiums = ['MBS', 'Braves', 'American Airlines Center', 'AT&T Stadium', 
-                   'Bank of America Properties', 'Spectrum Center Properties', 
-                   'T Mobile Arena', 'Allegiant Stadium Properties']
+                   'Bank of America Stadium', 'Spectrum Center', 
+                   'T Mobile Arena', 'Allegiant Stadium']
         index_df = index_df[index_df['Stadium/Market'].isin(stadiums)].copy()
         
         return weights_df, index_df
@@ -328,9 +328,9 @@ def calculate_scores_with_custom_weights(index_df, custom_weights_source):
     name_mapping = {
         'MBS': 'Mercedez Benz (Atlanta)',
         'Braves': 'Truist Park (Atlanta)',
-        'Bank of America Properties': 'Bank of America Properties (Charlotte)',
-        'Spectrum Center Properties': 'Spectrum Center Properties (Charlotte)',
-        'Allegiant Stadium Properties': 'Allegiant Stadium Properties (Las Vegas)',
+        'Bank of America Stadium': 'Bank of America Stadium (Charlotte)',
+        'Spectrum Center': 'Spectrum Center (Charlotte)',
+        'Allegiant Stadium': 'Allegiant Stadium (Las Vegas)',
         'T Mobile Arena': 'T Mobile Arena (Las Vegas)',
         'American Airlines Center': 'American Airlines Center (DFW)',
         'AT&T Stadium': 'AT&T Stadium (DFW)'
@@ -372,10 +372,10 @@ def create_default_data():
         {'Stadium/Market': 'Truist Park (Atlanta)', 'Office Score': 82, 'Retail Score': 128, 'Hospitality Score': 108, 'Multifamily Score': 46},
         {'Stadium/Market': 'American Airlines Center (DFW)', 'Office Score': 96, 'Retail Score': 98, 'Hospitality Score': 137, 'Multifamily Score': 79},
         {'Stadium/Market': 'AT&T Stadium (DFW)', 'Office Score': 67, 'Retail Score': 110, 'Hospitality Score': 27, 'Multifamily Score': 80},
-        {'Stadium/Market': 'Bank of America Properties (Charlotte)', 'Office Score': 84, 'Retail Score': 82, 'Hospitality Score': 127, 'Multifamily Score': 73},
-        {'Stadium/Market': 'Spectrum Center Properties (Charlotte)', 'Office Score': 84, 'Retail Score': 51, 'Hospitality Score': 87, 'Multifamily Score': 71},
+        {'Stadium/Market': 'Bank of America Stadium (Charlotte)', 'Office Score': 84, 'Retail Score': 82, 'Hospitality Score': 127, 'Multifamily Score': 73},
+        {'Stadium/Market': 'Spectrum Center (Charlotte)', 'Office Score': 84, 'Retail Score': 51, 'Hospitality Score': 87, 'Multifamily Score': 71},
         {'Stadium/Market': 'T Mobile Arena (Las Vegas)', 'Office Score': 55, 'Retail Score': 84, 'Hospitality Score': 79, 'Multifamily Score': 161},
-        {'Stadium/Market': 'Allegiant Stadium Properties (Las Vegas)', 'Office Score': 65, 'Retail Score': 30, 'Hospitality Score': 62, 'Multifamily Score': 11},
+        {'Stadium/Market': 'Allegiant Stadium (Las Vegas)', 'Office Score': 65, 'Retail Score': 30, 'Hospitality Score': 62, 'Multifamily Score': 11},
     ])
 
 # Stadium metadata for visualization with team colors
@@ -394,21 +394,21 @@ STADIUM_META = {
         "short": "Truist Park",
         "color": "#CE1141"  # Braves Red
     },
-    "Bank of America Properties (Charlotte)": {
+    "Bank of America Stadium (Charlotte)": {
         "city": "Charlotte, NC", 
         "team": "Carolina Panthers", 
         "sport": "NFL", 
         "short": "Bank of America",
         "color": "#0085CA"  # Panthers Blue
     },
-    "Spectrum Center Properties (Charlotte)": {
+    "Spectrum Center (Charlotte)": {
         "city": "Charlotte, NC", 
         "team": "Charlotte Hornets", 
         "sport": "NBA", 
         "short": "Spectrum Center",
         "color": "#1D1160"  # Hornets Purple
     },
-    "Allegiant Stadium Properties (Las Vegas)": {
+    "Allegiant Stadium (Las Vegas)": {
         "city": "Las Vegas, NV", 
         "team": "Las Vegas Raiders", 
         "sport": "NFL", 
