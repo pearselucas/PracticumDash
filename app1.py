@@ -71,14 +71,15 @@ div[data-testid="stTabs"] button { font-weight:600; font-size:0.95rem; }
 # ── Data Loading Functions ────────────────────────────────────────────────────
 def load_matrix_from_excel(file_obj):
     """
-    Load data directly from the Matrix tab (last sheet) in the Excel file.
+    Load data directly from the Matrix tab in the Excel file.
+    Reads from specific range E9:I17 where the data is located.
     NO CALCULATIONS - just reads the scores as-is.
     """
     try:
         # Get all sheet names
         xl = pd.ExcelFile(file_obj)
         
-        # Find the Matrix sheet (should be the last one or named "Matrix")
+        # Find the Matrix sheet
         matrix_sheet = None
         for sheet_name in xl.sheet_names:
             if 'matrix' in sheet_name.lower():
@@ -89,43 +90,43 @@ def load_matrix_from_excel(file_obj):
         if matrix_sheet is None:
             matrix_sheet = xl.sheet_names[-1]
         
-        # Read the Matrix sheet - header is on row 9 (index 8)
-        df = pd.read_excel(file_obj, sheet_name=matrix_sheet, header=8)
+        # Read the Matrix sheet starting from column E (index 4), row 9 (index 8)
+        # This reads the range E9:I17
+        df = pd.read_excel(
+            file_obj, 
+            sheet_name=matrix_sheet, 
+            usecols="E:I",  # Columns E through I
+            header=8        # Row 9 (0-indexed as 8) is the header
+        )
         
-        # Clean up column names (remove leading/trailing whitespace)
-        df.columns = df.columns.str.strip() if hasattr(df.columns, 'str') else df.columns
-        
-        # Find the columns we need (case-insensitive and whitespace-tolerant)
-        required_cols = ['Stadium/Market', 'Office Score', 'Retail Score', 
-                        'Hospitality Score', 'Multifamily Score']
-        
-        # Create mapping of actual column names
-        col_mapping = {}
-        for req_col in required_cols:
-            for actual_col in df.columns:
-                if req_col.lower().replace(' ', '') == str(actual_col).lower().replace(' ', ''):
-                    col_mapping[actual_col] = req_col
-                    break
-        
-        # Rename columns to standard names
-        df = df.rename(columns=col_mapping)
-        
-        # Keep only the relevant columns
-        df_clean = df[required_cols].copy()
-        
+        # The columns should now be: Stadium/Market, Office Score, Retail Score, Hospitality Score, Multifamily Score
         # Remove any rows with NaN in Stadium/Market
-        df_clean = df_clean[df_clean['Stadium/Market'].notna()].copy()
+        df_clean = df[df.iloc[:, 0].notna()].copy()
         
-        # Round scores to whole numbers for display
-        df_clean['Office Score'] = pd.to_numeric(df_clean['Office Score'], errors='coerce').round(0)
-        df_clean['Retail Score'] = pd.to_numeric(df_clean['Retail Score'], errors='coerce').round(0)
-        df_clean['Hospitality Score'] = pd.to_numeric(df_clean['Hospitality Score'], errors='coerce').round(0)
-        df_clean['Multifamily Score'] = pd.to_numeric(df_clean['Multifamily Score'], errors='coerce').round(0)
-        
-        # Remove any rows where all scores are NaN
-        df_clean = df_clean.dropna(subset=['Office Score', 'Retail Score', 'Hospitality Score', 'Multifamily Score'], how='all')
-        
-        return df_clean
+        # Ensure we have exactly 5 columns
+        if len(df_clean.columns) >= 5:
+            df_clean = df_clean.iloc[:, :5].copy()
+            
+            # Set proper column names
+            df_clean.columns = ['Stadium/Market', 'Office Score', 'Retail Score', 
+                               'Hospitality Score', 'Multifamily Score']
+            
+            # Round scores to whole numbers for display
+            df_clean['Office Score'] = pd.to_numeric(df_clean['Office Score'], errors='coerce').round(0)
+            df_clean['Retail Score'] = pd.to_numeric(df_clean['Retail Score'], errors='coerce').round(0)
+            df_clean['Hospitality Score'] = pd.to_numeric(df_clean['Hospitality Score'], errors='coerce').round(0)
+            df_clean['Multifamily Score'] = pd.to_numeric(df_clean['Multifamily Score'], errors='coerce').round(0)
+            
+            # Remove any rows where all scores are NaN
+            df_clean = df_clean.dropna(
+                subset=['Office Score', 'Retail Score', 'Hospitality Score', 'Multifamily Score'], 
+                how='all'
+            )
+            
+            return df_clean
+        else:
+            st.error(f"Expected 5 columns but found {len(df_clean.columns)}")
+            return None
         
     except Exception as e:
         st.error(f"Error loading Matrix tab from Excel: {str(e)}")
@@ -382,7 +383,12 @@ with tab2:
                 plot_bgcolor="#f8fafc",
                 paper_bgcolor="white",
                 xaxis=dict(tickangle=-45, showgrid=False),
-                yaxis=dict(title=f"{asset_label} Score", showgrid=True, gridcolor="#e2e8f0"),
+                yaxis=dict(
+                    title=f"{asset_label} Score", 
+                    showgrid=True, 
+                    gridcolor="#e2e8f0",
+                    range=[0, asset_df[asset_col].max() * 1.15]  # Add 15% padding at top
+                ),
                 font=dict(family="Inter"),
                 margin=dict(t=20, b=100)
             )
