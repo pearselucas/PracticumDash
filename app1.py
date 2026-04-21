@@ -488,7 +488,9 @@ with st.sidebar:
 
             if df_original is not None and len(df_original) > 0:
                 st.session_state.df_original = df_original.copy()
-                if st.session_state.current_df is None:
+                if uploaded_file is not None and st.session_state.last_weight_validation != "success":
+                    st.session_state.current_df = df_original.copy()
+                elif st.session_state.current_df is None:
                     st.session_state.current_df = df_original.copy()
 
             if weights_df is not None and index_df is not None:
@@ -1094,6 +1096,7 @@ with tab6:
                     st.session_state.current_df = recalculated_df.copy()
                     st.session_state.last_weight_validation = "success"
                     st.success("Custom weights applied. Dashboard scores and recommendations have been refreshed.")
+                    st.rerun()
                 else:
                     st.session_state.last_weight_validation = "invalid"
                     st.warning("Weights were not applied. Each asset class column must sum to 100. The dashboard is still using the last valid scores.")
