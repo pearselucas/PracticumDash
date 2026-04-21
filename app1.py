@@ -9,6 +9,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 import numpy as np
+from io import BytesIO
 
 st.set_page_config(
     page_title="Stadium RE Investment Analyzer",
@@ -415,108 +416,57 @@ with st.sidebar:
         help="Upload Excel file with Matrix tab (last sheet)"
     )
     
-    # Initialize session state for weights
-    if 'custom_weights' not in st.session_state:
-        st.session_state.custom_weights = None
+    # Initialize session state for workbook-driven custom weights
     if 'weights_df' not in st.session_state:
         st.session_state.weights_df = None
+    if 'weights_editor_df' not in st.session_state:
+        st.session_state.weights_editor_df = None
     if 'index_df' not in st.session_state:
         st.session_state.index_df = None
-    if 'use_custom_weights' not in st.session_state:
-        st.session_state.use_custom_weights = False
-    
+    if 'df_original' not in st.session_state:
+        st.session_state.df_original = None
+    if 'current_df' not in st.session_state:
+        st.session_state.current_df = None
+    if 'last_weight_validation' not in st.session_state:
+        st.session_state.last_weight_validation = None
+
     if uploaded_file is not None:
         with st.spinner("Loading Matrix data from Excel..."):
-            df_original = load_matrix_from_excel(uploaded_file)
-            
-            # Also load weights and index data for custom weight calculation
-            weights_df, index_df = load_weights_and_index_data(uploaded_file)
-            
+            excel_bytes = uploaded_file.getvalue()
+            df_original = load_matrix_from_excel(BytesIO(excel_bytes))
+            weights_df, index_df = load_weights_and_index_data(BytesIO(excel_bytes))
+
+            if df_original is not None and len(df_original) > 0:
+                st.session_state.df_original = df_original.copy()
+                if st.session_state.current_df is None:
+                    st.session_state.current_df = df_original.copy()
+
             if weights_df is not None and index_df is not None:
-                st.session_state.weights_df = weights_df
-                st.session_state.index_df = index_df
-        
-        if df_original is None or len(df_original) == 0:
+                st.session_state.weights_df = weights_df.copy()
+                st.session_state.index_df = index_df.copy()
+                if st.session_state.weights_editor_df is None:
+                    st.session_state.weights_editor_df = prepare_weights_for_editor(weights_df)
+
+        if st.session_state.df_original is None or len(st.session_state.df_original) == 0:
             st.error("Could not load Matrix data. Using default scores.")
-            df = create_default_data()
+            if st.session_state.current_df is None:
+                st.session_state.current_df = create_default_data()
+            df = st.session_state.current_df.copy()
             data_loaded = True
         else:
-            st.success(f"✓ Loaded {len(df_original)} stadiums from Matrix tab")
-            
-            # Weight Adjustment UI
-            st.markdown("---")
-            st.markdown("### 🎚️ Adjust Weights")
-            
-            use_custom = st.checkbox(
-                "Enable Custom Weights",
-                value=st.session_state.use_custom_weights,
-                help="Adjust metric weights to recalculate scores"
-            )
-            st.session_state.use_custom_weights = use_custom
-            
-            if use_custom and st.session_state.weights_df is not None:
-                st.markdown("#### Metric Weights")
-                st.caption("Adjust weights for each metric across asset classes")
-                
-                # Create expandable sections for each asset class
-                asset_classes = ['Office', 'Retail', 'Hospitality', 'Multifamily']
-                
-                # Initialize custom weights if not already done
-                if st.session_state.custom_weights is None:
-                    custom_weights = {}
-                    for _, row in st.session_state.weights_df.iterrows():
-                        metric = row['Metric']
-                        custom_weights[metric] = {
-                            'Office': row['Office'],
-                            'Retail': row['Retail'],
-                            'Hospitality': row['Hospitality'],
-                            'Multifamily': row['Multifamily']
-                        }
-                    st.session_state.custom_weights = custom_weights
-                
-                # Asset class tabs for weight adjustment
-                for asset_class in asset_classes:
-                    with st.expander(f"📊 {asset_class} Weights"):
-                        total_weight = 0
-                        
-                        for metric in st.session_state.custom_weights.keys():
-                            current_weight = st.session_state.custom_weights[metric][asset_class]
-                            
-                            new_weight = st.slider(
-                                metric,
-                                min_value=0.0,
-                                max_value=1.0,
-                                value=float(current_weight),
-                                step=0.01,
-                                key=f"{asset_class}_{metric}",
-                                format="%.2f"
-                            )
-                            
-                            st.session_state.custom_weights[metric][asset_class] = new_weight
-                            total_weight += new_weight
-                        
-                        # Show total weight
-                        if abs(total_weight - 1.0) > 0.01:
-                            st.warning(f"⚠️ Total weight: {total_weight:.2f} (should be 1.00)")
-                        else:
-                            st.success(f"✓ Total weight: {total_weight:.2f}")
-                
-                # Recalculate scores with custom weights
-                df = calculate_scores_with_custom_weights(
-                    st.session_state.index_df, 
-                    st.session_state.custom_weights
-                )
-                st.info("📊 Scores recalculated with custom weights")
-            else:
-                # Use original Matrix scores
-                df = df_original
-            
+            st.success(f"Loaded {len(st.session_state.df_original)} stadiums from Matrix tab")
+
+            if st.session_state.current_df is None:
+                st.session_state.current_df = st.session_state.df_original.copy()
+
+            df = st.session_state.current_df.copy()
             data_loaded = True
     else:
         st.info("Using default Matrix scores")
-        df = create_default_data()
+        if st.session_state.current_df is None:
+            st.session_state.current_df = create_default_data()
+        df = st.session_state.current_df.copy()
         data_loaded = True
-    
     # Add metadata to dataframe
     if data_loaded:
         df['City'] = df['Stadium/Market'].map(lambda x: STADIUM_META.get(x, {}).get('city', ''))
@@ -580,12 +530,13 @@ st.markdown(f"""
 # ══════════════════════════════════════════════════════════════════════════════
 # MAIN TABS
 # ══════════════════════════════════════════════════════════════════════════════
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "Executive Summary",
     "Asset Class Analysis",
     "Spider Charts",
     "Comparative Analytics",
-    "Data Table"
+    "Data Table",
+    "Custom Weights"
 ])
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1037,3 +988,83 @@ with tab5:
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TAB 6 - Custom Weights
+# ══════════════════════════════════════════════════════════════════════════════
+with tab6:
+    st.markdown("### Custom Weighting Matrix")
+    st.caption("Edit the 26 metric weights directly. Each asset class column must sum to 100 before the dashboard updates.")
+
+    if uploaded_file is None or st.session_state.weights_df is None or st.session_state.index_df is None:
+        st.info("Upload the Excel workbook to enable custom weights based on the Asset Class Weighting Matrix and Index Calculation sheets.")
+    else:
+        if st.session_state.weights_editor_df is None:
+            st.session_state.weights_editor_df = prepare_weights_for_editor(st.session_state.weights_df)
+
+        edited_weights_df = st.data_editor(
+            st.session_state.weights_editor_df,
+            use_container_width=True,
+            hide_index=True,
+            num_rows="fixed",
+            column_config={
+                "Metric": st.column_config.TextColumn("Metric", disabled=True, width="medium"),
+                "Office": st.column_config.NumberColumn("Office Weight %", min_value=0.0, max_value=100.0, step=0.1, format="%.2f"),
+                "Retail": st.column_config.NumberColumn("Retail Weight %", min_value=0.0, max_value=100.0, step=0.1, format="%.2f"),
+                "Hospitality": st.column_config.NumberColumn("Hospitality Weight %", min_value=0.0, max_value=100.0, step=0.1, format="%.2f"),
+                "Multifamily": st.column_config.NumberColumn("Multifamily Weight %", min_value=0.0, max_value=100.0, step=0.1, format="%.2f"),
+            },
+            key="weights_editor_table"
+        )
+
+        totals_valid, totals = validate_weight_totals(edited_weights_df)
+
+        c1, c2, c3, c4 = st.columns(4)
+        for col_obj, asset_col in zip([c1, c2, c3, c4], ["Office", "Retail", "Hospitality", "Multifamily"]):
+            total_val = totals[asset_col]
+            with col_obj:
+                if abs(total_val - 100.0) <= 0.01:
+                    st.success(f"{asset_col}: {total_val:.2f}%")
+                else:
+                    st.error(f"{asset_col}: {total_val:.2f}%")
+
+        b1, b2, b3 = st.columns([1, 1, 2])
+
+        with b1:
+            if st.button("Apply Weights", use_container_width=True):
+                st.session_state.weights_editor_df = edited_weights_df.copy()
+                totals_valid, totals = validate_weight_totals(st.session_state.weights_editor_df)
+
+                if totals_valid:
+                    recalculated_df = calculate_scores_with_custom_weights(
+                        st.session_state.index_df,
+                        st.session_state.weights_editor_df
+                    )
+                    st.session_state.current_df = recalculated_df.copy()
+                    st.session_state.last_weight_validation = "success"
+                    st.success("Custom weights applied. Dashboard scores and recommendations have been refreshed.")
+                else:
+                    st.session_state.last_weight_validation = "invalid"
+                    st.warning("Weights were not applied. Each asset class column must sum to 100. The dashboard is still using the last valid scores.")
+
+        with b2:
+            if st.button("Reset to Excel Defaults", use_container_width=True):
+                st.session_state.weights_editor_df = prepare_weights_for_editor(st.session_state.weights_df)
+                st.session_state.current_df = st.session_state.df_original.copy()
+                st.session_state.last_weight_validation = "reset"
+                st.rerun()
+
+        with b3:
+            st.caption("The rest of the dashboard uses the original Matrix scores until you apply a valid 100% weighting set for all four asset classes.")
+
+        st.markdown("---")
+        st.markdown("#### How this updates the dashboard")
+        st.markdown(
+            """
+            - The editable grid mirrors the workbook's Asset Class Weighting Matrix.
+            - When you click **Apply Weights**, the app recalculates the weighted scores from the Index Calculation sheet.
+            - Those recalculated scores replace the dashboard's current score table, which updates the charts, rankings, matrix, and recommendations.
+            - If any asset class does not total 100%, the dashboard keeps the last valid result so nothing breaks.
+            """
+        )
