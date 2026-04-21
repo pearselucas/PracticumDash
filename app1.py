@@ -9,6 +9,25 @@ import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
 import numpy as np
+
+# Standardize uploaded Excel/raw names to dashboard display names
+DISPLAY_NAME_REMAP = {
+    "Bank of America Properties": "Bank of America Stadium",
+    "Spectrum Center Properties": "Spectrum Center",
+    "Allegiant Stadium Properties": "Allegiant Stadium",
+    "Bank of America Properties (Charlotte)": "Bank of America Stadium (Charlotte)",
+    "Spectrum Center Properties (Charlotte)": "Spectrum Center (Charlotte)",
+    "Allegiant Stadium Properties (Las Vegas)": "Allegiant Stadium (Las Vegas)",
+}
+
+def standardize_stadium_names(df, column='Stadium/Market'):
+    """Rename workbook/raw labels to dashboard display labels without changing scores."""
+    if df is None or column not in df.columns:
+        return df
+    out = df.copy()
+    out[column] = out[column].replace(DISPLAY_NAME_REMAP)
+    return out
+
 from io import BytesIO
 
 st.set_page_config(
@@ -224,7 +243,7 @@ def load_matrix_from_excel(file_obj):
                 how='all'
             )
             
-            return df_clean
+            return standardize_stadium_names(df_clean)
         else:
             st.error(f"Expected 5 columns but found {len(df_clean.columns)}")
             return None
@@ -255,7 +274,7 @@ def load_weights_and_index_data(file_obj):
                    'T Mobile Arena', 'Allegiant Stadium']
         index_df = index_df[index_df['Stadium/Market'].isin(stadiums)].copy()
         
-        return weights_df, index_df
+        return weights_df, standardize_stadium_names(index_df)
         
     except Exception as e:
         st.error(f"Error loading weights and index data: {str(e)}")
@@ -1093,7 +1112,7 @@ with tab6:
                         st.session_state.index_df,
                         st.session_state.weights_editor_df
                     )
-                    st.session_state.current_df = recalculated_df.copy()
+                    st.session_state.current_df = standardize_stadium_names(recalculated_df.copy())
                     st.session_state.last_weight_validation = "success"
                     st.success("Custom weights applied. Dashboard scores and recommendations have been refreshed.")
                     st.rerun()
