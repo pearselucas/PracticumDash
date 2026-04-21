@@ -79,14 +79,23 @@ def load_matrix_from_excel(file_obj):
         # Get all sheet names
         xl = pd.ExcelFile(file_obj)
         
-        # Find the Matrix sheet
+        # Find the Matrix sheet - prioritize exact match
         matrix_sheet = None
+        
+        # First look for exact match "Matrix"
         for sheet_name in xl.sheet_names:
-            if 'matrix' in sheet_name.lower():
+            if sheet_name == 'Matrix':
                 matrix_sheet = sheet_name
                 break
         
-        # If no Matrix sheet found, use the last sheet
+        # If not found, look for any sheet containing "matrix" but not "weighting"
+        if matrix_sheet is None:
+            for sheet_name in xl.sheet_names:
+                if 'matrix' in sheet_name.lower() and 'weighting' not in sheet_name.lower():
+                    matrix_sheet = sheet_name
+                    break
+        
+        # If still not found, use the last sheet
         if matrix_sheet is None:
             matrix_sheet = xl.sheet_names[-1]
         
