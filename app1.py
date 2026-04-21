@@ -261,7 +261,52 @@ def load_weights_and_index_data(file_obj):
         st.error(f"Error loading weights and index data: {str(e)}")
         return None, None
 
-def calculate_scores_with_custom_weights(index_df, custom_weights):
+
+
+def prepare_weights_for_editor(weights_df):
+    """
+    Convert workbook weights to an editable percentage table for Streamlit.
+    Returns columns: Metric, Office, Retail, Hospitality, Multifamily
+    where weight values are percentages from 0 to 100.
+    """
+    editor_df = weights_df.copy()
+    editor_df = editor_df[editor_df['Metric'].notna()].copy()
+    keep_cols = ['Metric', 'Office', 'Retail', 'Hospitality', 'Multifamily']
+    editor_df = editor_df[keep_cols].copy()
+    for col in ['Office', 'Retail', 'Hospitality', 'Multifamily']:
+        editor_df[col] = pd.to_numeric(editor_df[col], errors='coerce').fillna(0.0) * 100.0
+    return editor_df.reset_index(drop=True)
+
+
+def validate_weight_totals(editor_df, tolerance=0.01):
+    """
+    Validate that each asset class column totals 100%.
+    Returns (is_valid, totals_dict).
+    """
+    totals = {}
+    valid = True
+    for col in ['Office', 'Retail', 'Hospitality', 'Multifamily']:
+        totals[col] = float(pd.to_numeric(editor_df[col], errors='coerce').fillna(0.0).sum())
+        if abs(totals[col] - 100.0) > tolerance:
+            valid = False
+    return valid, totals
+
+
+def convert_editor_to_custom_weights(editor_df):
+    """
+    Convert percentage editor table back to decimal-weight dict:
+    {metric: {Office: 0.20, ...}}
+    """
+    custom_weights = {}
+    for _, row in editor_df.iterrows():
+        metric = row['Metric']
+        custom_weights[metric] = {}
+        for col in ['Office', 'Retail', 'Hospitality', 'Multifamily']:
+            val = pd.to_numeric(pd.Series([row[col]]), errors='coerce').fillna(0.0).iloc[0]
+            custom_weights[metric][col] = float(val) / 100.0
+    return custom_weights
+
+def calculate_scores_with_custom_weights(index_df, custom_weights_source):
     """
     Calculate scores using custom weights.
     
@@ -272,6 +317,11 @@ def calculate_scores_with_custom_weights(index_df, custom_weights):
     Returns:
     - DataFrame with Stadium/Market and scores for each asset class
     """
+    if isinstance(custom_weights_source, pd.DataFrame):
+        custom_weights = convert_editor_to_custom_weights(custom_weights_source)
+    else:
+        custom_weights = custom_weights_source
+
     results = []
     
     # Stadium name mapping
