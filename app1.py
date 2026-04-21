@@ -92,18 +92,38 @@ def load_matrix_from_excel(file_obj):
         # Read the Matrix sheet - header is on row 9 (index 8)
         df = pd.read_excel(file_obj, sheet_name=matrix_sheet, header=8)
         
+        # Clean up column names (remove leading/trailing whitespace)
+        df.columns = df.columns.str.strip() if hasattr(df.columns, 'str') else df.columns
+        
+        # Find the columns we need (case-insensitive and whitespace-tolerant)
+        required_cols = ['Stadium/Market', 'Office Score', 'Retail Score', 
+                        'Hospitality Score', 'Multifamily Score']
+        
+        # Create mapping of actual column names
+        col_mapping = {}
+        for req_col in required_cols:
+            for actual_col in df.columns:
+                if req_col.lower().replace(' ', '') == str(actual_col).lower().replace(' ', ''):
+                    col_mapping[actual_col] = req_col
+                    break
+        
+        # Rename columns to standard names
+        df = df.rename(columns=col_mapping)
+        
         # Keep only the relevant columns
-        df_clean = df[['Stadium/Market', 'Office Score', 'Retail Score', 
-                       'Hospitality Score', 'Multifamily Score']].copy()
+        df_clean = df[required_cols].copy()
         
         # Remove any rows with NaN in Stadium/Market
         df_clean = df_clean[df_clean['Stadium/Market'].notna()].copy()
         
         # Round scores to whole numbers for display
-        df_clean['Office Score'] = df_clean['Office Score'].round(0)
-        df_clean['Retail Score'] = df_clean['Retail Score'].round(0)
-        df_clean['Hospitality Score'] = df_clean['Hospitality Score'].round(0)
-        df_clean['Multifamily Score'] = df_clean['Multifamily Score'].round(0)
+        df_clean['Office Score'] = pd.to_numeric(df_clean['Office Score'], errors='coerce').round(0)
+        df_clean['Retail Score'] = pd.to_numeric(df_clean['Retail Score'], errors='coerce').round(0)
+        df_clean['Hospitality Score'] = pd.to_numeric(df_clean['Hospitality Score'], errors='coerce').round(0)
+        df_clean['Multifamily Score'] = pd.to_numeric(df_clean['Multifamily Score'], errors='coerce').round(0)
+        
+        # Remove any rows where all scores are NaN
+        df_clean = df_clean.dropna(subset=['Office Score', 'Retail Score', 'Hospitality Score', 'Multifamily Score'], how='all')
         
         return df_clean
         
