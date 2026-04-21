@@ -23,168 +23,48 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 
-/* Blue Eagle Capital Brand Colors */
-:root {
-    --bec-primary: #003366;      /* Deep Navy Blue */
-    --bec-secondary: #0066CC;    /* Bright Blue */
-    --bec-accent: #66B2FF;       /* Light Blue */
-    --bec-gold: #C49A6C;         /* Metallic Gold accent */
-    --bec-dark: #001a33;         /* Darker Navy */
-}
-
 .main-header {
-    background: linear-gradient(135deg, var(--bec-dark) 0%, var(--bec-primary) 50%, var(--bec-secondary) 100%);
-    color: white; padding: 2rem 3rem; border-radius: 16px;
-    margin-bottom: 2rem; box-shadow: 0 8px 32px rgba(0,51,102,0.25);
-    position: relative;
+    background: linear-gradient(135deg, #1a365d 0%, #2c5282 60%, #2b6cb0 100%);
+    color: white; padding: 2.5rem 3rem; border-radius: 16px;
+    margin-bottom: 2rem; box-shadow: 0 8px 32px rgba(26,54,93,0.15);
 }
-
-.bec-logo {
-    position: absolute;
-    top: 2rem;
-    right: 3rem;
-    height: 60px;
-    width: auto;
-}
-
-.main-header h1 { 
-    font-size: 2.2rem; margin: 0; font-weight: 800; 
-    letter-spacing:-0.03em; 
-    color: white;
-}
-.main-header p  { 
-    font-size: 1rem; margin: 0.6rem 0 0; opacity: 0.95; 
-    line-height: 1.6; max-width: 75%;
-}
-.main-header .subtitle-row { 
-    display:flex; gap:2rem; margin-top:1rem; flex-wrap:wrap; 
-}
-.main-header .pill { 
-    background: rgba(255,255,255,0.2); 
-    border: 1px solid rgba(255,255,255,0.3);
-    border-radius:6px;
-    padding:0.4rem 1rem; font-size:0.85rem; font-weight:600; 
-}
+.main-header h1 { font-size: 2.2rem; margin: 0; font-weight: 800; letter-spacing:-0.03em; }
+.main-header p  { font-size: 1rem; margin: 0.6rem 0 0; opacity: 0.9; line-height: 1.6; }
+.main-header .subtitle-row { display:flex; gap:2rem; margin-top:1rem; flex-wrap:wrap; }
+.main-header .pill { background:rgba(255,255,255,0.15); border-radius:6px;
+                     padding:0.4rem 1rem; font-size:0.85rem; font-weight:600; }
 
 .metric-card {
-    background:#fff; 
-    border:1px solid #e2e8f0; 
-    border-radius:10px;
-    padding:1.25rem 1.5rem; 
-    text-align:center; 
-    height:100%;
-    box-shadow:0 2px 8px rgba(0,51,102,0.08); 
-    transition:all 0.2s;
-    border-top: 3px solid var(--bec-secondary);
+    background:#fff; border:1px solid #e2e8f0; border-radius:10px;
+    padding:1.25rem 1.5rem; text-align:center; height:100%;
+    box-shadow:0 2px 8px rgba(0,0,0,0.04); transition:all 0.2s;
 }
-.metric-card:hover { 
-    box-shadow:0 6px 20px rgba(0,102,204,0.15); 
-    transform: translateY(-2px); 
-}
-.metric-card .label { 
-    font-size:0.75rem; 
-    color:#64748b; 
-    text-transform:uppercase;
-    letter-spacing:0.08em; 
-    margin-bottom:0.4rem; 
-    font-weight:600; 
-}
-.metric-card .value { 
-    font-size:1.6rem; 
-    font-weight:800; 
-    color: var(--bec-primary); 
-}
-.metric-card .sub   { 
-    font-size:0.8rem; 
-    color:#94a3b8; 
-    margin-top:0.25rem; 
-}
+.metric-card:hover { box-shadow:0 6px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
+.metric-card .label { font-size:0.75rem; color:#64748b; text-transform:uppercase;
+                      letter-spacing:0.08em; margin-bottom:0.4rem; font-weight:600; }
+.metric-card .value { font-size:1.6rem; font-weight:800; color:#0f172a; }
+.metric-card .sub   { font-size:0.8rem; color:#94a3b8; margin-top:0.25rem; }
 
-.score-badge-POTENTIAL   { 
-    background:#d1fae5; 
-    color:#065f46; 
-    border:1.5px solid #6ee7b7; 
-}
-.score-badge-INFO  { 
-    background:#fef3c7; 
-    color:#78350f; 
-    border:1.5px solid #fcd34d; 
-}
-.score-badge-AVOID { 
-    background:#fee2e2; 
-    color:#991b1b; 
-    border:1.5px solid #fca5a5; 
-}
+.score-badge-POTENTIAL   { background:#d1fae5; color:#065f46; border:1.5px solid #6ee7b7; }
+.score-badge-INFO  { background:#fef3c7; color:#78350f; border:1.5px solid #fcd34d; }
+.score-badge-AVOID { background:#fee2e2; color:#991b1b; border:1.5px solid #fca5a5; }
 .score-badge {
-    display:inline-block; 
-    padding:0.3rem 0.9rem; 
-    border-radius:6px;
-    font-weight:700; 
-    font-size:0.85rem; 
-    letter-spacing:0.05em;
+    display:inline-block; padding:0.3rem 0.9rem; border-radius:6px;
+    font-weight:700; font-size:0.85rem; letter-spacing:0.05em;
 }
 
 .section-title {
-    font-size:1.1rem; 
-    font-weight:700; 
-    color: var(--bec-primary);
-    border-bottom:2px solid var(--bec-secondary); 
-    padding-bottom:0.5rem;
+    font-size:1.1rem; font-weight:700; color:#0f172a;
+    border-bottom:2px solid #e2e8f0; padding-bottom:0.5rem;
     margin:1.5rem 0 1rem;
 }
-
 .score-explainer {
-    background:#f8fafc; 
-    border:1px solid #cbd5e1; 
-    border-left: 4px solid var(--bec-secondary);
-    border-radius:10px;
-    padding:1.25rem 1.5rem; 
-    font-size:0.88rem; 
-    color:#475569; 
-    margin:1rem 0;
+    background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px;
+    padding:1.25rem 1.5rem; font-size:0.88rem; color:#475569; margin:1rem 0;
     line-height: 1.7;
 }
-.score-explainer strong { 
-    color: var(--bec-primary); 
-}
-
-div[data-testid="stTabs"] button { 
-    font-weight:600; 
-    font-size:0.95rem; 
-}
-
-div[data-testid="stTabs"] button[aria-selected="true"] {
-    border-bottom-color: var(--bec-secondary) !important;
-    color: var(--bec-primary) !important;
-}
-
-/* Sidebar branding */
-section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
-}
-
-section[data-testid="stSidebar"] > div {
-    padding-top: 2rem;
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: #f1f5f9;
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--bec-secondary);
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: var(--bec-primary);
-}
+.score-explainer strong { color:#0f172a; }
+div[data-testid="stTabs"] button { font-weight:600; font-size:0.95rem; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -289,12 +169,8 @@ STADIUM_META = {
 }
 
 SPORT_COLORS = {
-    "NFL": "#003366",      # Blue Eagle Navy
-    "MLB": "#0066CC",      # Blue Eagle Bright Blue
-    "NBA": "#1a4d7a",      # Medium Blue
-    "NHL": "#002447",      # Deep Navy
-    "NFL/MLS": "#004080",  # Royal Blue
-    "NBA/NHL": "#0052a3"   # Cobalt Blue
+    "NFL": "#013369", "MLB": "#041E42", "NBA": "#C8102E", 
+    "NHL": "#000000", "NFL/MLS": "#0A2240", "NBA/NHL": "#00471B"
 }
 
 def rating(score):
@@ -382,29 +258,8 @@ else:
 # ══════════════════════════════════════════════════════════════════════════════
 # HEADER
 # ══════════════════════════════════════════════════════════════════════════════
-
-# Add logo uploader in sidebar
-with st.sidebar:
-    st.markdown("---")
-    st.markdown("### Company Branding")
-    logo_file = st.file_uploader(
-        "Upload Blue Eagle Capital Logo",
-        type=['png', 'jpg', 'jpeg', 'svg'],
-        help="Upload your company logo (recommended: PNG with transparent background)"
-    )
-    
-    if logo_file is not None:
-        import base64
-        logo_bytes = logo_file.read()
-        logo_base64 = base64.b64encode(logo_bytes).decode()
-        logo_html = f'<img src="data:image/png;base64,{logo_base64}" class="bec-logo" alt="Blue Eagle Capital">'
-    else:
-        # Placeholder logo text
-        logo_html = '<div class="bec-logo" style="background:rgba(255,255,255,0.2); padding:0.5rem 1rem; border-radius:6px; font-weight:700; font-size:0.9rem;">BLUE EAGLE CAPITAL</div>'
-
 st.markdown(f"""
 <div class="main-header">
-    {logo_html}
     <h1>Stadium District Real Estate Investment Analyzer</h1>
     <p>Comprehensive analysis of commercial real estate opportunities in major sports venue corridors. 
     Data-driven investment scoring across office, retail, hospitality, and multifamily asset classes.</p>
@@ -412,7 +267,6 @@ st.markdown(f"""
         <span class="pill">{len(filtered)} Stadiums Analyzed</span>
         <span class="pill">4 Asset Classes</span>
         <span class="pill">CoStar Analytics Q1 2026</span>
-        <span class="pill">Blue Eagle Capital Research</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -857,17 +711,3 @@ with tab5:
     investment advice. Please consult with qualified financial and real estate professionals before making 
     investment decisions.
     </div>""", unsafe_allow_html=True)
-    
-    # Blue Eagle Capital Footer
-    st.markdown("---")
-    st.markdown("""
-    <div style="text-align:center; padding:2rem 0; color:#64748b; font-size:0.85rem;">
-        <div style="font-weight:700; color:#003366; font-size:1.1rem; margin-bottom:0.5rem;">
-            BLUE EAGLE CAPITAL
-        </div>
-        <div>Stadium District Real Estate Research & Analytics</div>
-        <div style="margin-top:0.5rem; font-size:0.75rem;">
-            Powered by CoStar Analytics | © 2026 Blue Eagle Capital. All rights reserved.
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
