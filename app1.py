@@ -23,19 +23,10 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 
-/* Blue Eagle Capital Brand Colors */
-:root {
-    --bec-primary: #003366;      /* Deep Navy Blue */
-    --bec-secondary: #0066CC;    /* Bright Blue */
-    --bec-accent: #66B2FF;       /* Light Blue */
-    --bec-gold: #C49A6C;         /* Metallic Gold accent */
-    --bec-dark: #001a33;         /* Darker Navy */
-}
-
 .main-header {
-    background: linear-gradient(135deg, var(--bec-dark) 0%, var(--bec-primary) 50%, var(--bec-secondary) 100%);
-    color: white; padding: 2rem 3rem; border-radius: 16px;
-    margin-bottom: 2rem; box-shadow: 0 8px 32px rgba(0,51,102,0.25);
+    background: linear-gradient(135deg, #1a365d 0%, #2c5282 60%, #2b6cb0 100%);
+    color: white; padding: 2.5rem 3rem; border-radius: 16px;
+    margin-bottom: 2rem; box-shadow: 0 8px 32px rgba(26,54,93,0.15);
     position: relative;
 }
 
@@ -43,8 +34,14 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
     position: absolute;
     top: 2rem;
     right: 3rem;
-    height: 60px;
+    height: 50px;
     width: auto;
+    background: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #1a365d;
 }
 
 .main-header h1 { 
@@ -60,8 +57,7 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
     display:flex; gap:2rem; margin-top:1rem; flex-wrap:wrap; 
 }
 .main-header .pill { 
-    background: rgba(255,255,255,0.2); 
-    border: 1px solid rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.15); 
     border-radius:6px;
     padding:0.4rem 1rem; font-size:0.85rem; font-weight:600; 
 }
@@ -73,12 +69,11 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
     padding:1.25rem 1.5rem; 
     text-align:center; 
     height:100%;
-    box-shadow:0 2px 8px rgba(0,51,102,0.08); 
+    box-shadow:0 2px 8px rgba(0,0,0,0.04); 
     transition:all 0.2s;
-    border-top: 3px solid var(--bec-secondary);
 }
 .metric-card:hover { 
-    box-shadow:0 6px 20px rgba(0,102,204,0.15); 
+    box-shadow:0 6px 20px rgba(0,0,0,0.08); 
     transform: translateY(-2px); 
 }
 .metric-card .label { 
@@ -92,7 +87,7 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 .metric-card .value { 
     font-size:1.6rem; 
     font-weight:800; 
-    color: var(--bec-primary); 
+    color:#0f172a; 
 }
 .metric-card .sub   { 
     font-size:0.8rem; 
@@ -127,8 +122,8 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 .section-title {
     font-size:1.1rem; 
     font-weight:700; 
-    color: var(--bec-primary);
-    border-bottom:2px solid var(--bec-secondary); 
+    color:#0f172a;
+    border-bottom:2px solid #e2e8f0; 
     padding-bottom:0.5rem;
     margin:1.5rem 0 1rem;
 }
@@ -136,7 +131,6 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 .score-explainer {
     background:#f8fafc; 
     border:1px solid #cbd5e1; 
-    border-left: 4px solid var(--bec-secondary);
     border-radius:10px;
     padding:1.25rem 1.5rem; 
     font-size:0.88rem; 
@@ -145,7 +139,7 @@ html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
     line-height: 1.7;
 }
 .score-explainer strong { 
-    color: var(--bec-primary); 
+    color:#0f172a; 
 }
 
 div[data-testid="stTabs"] button { 
@@ -153,70 +147,14 @@ div[data-testid="stTabs"] button {
     font-size:0.95rem; 
 }
 
-div[data-testid="stTabs"] button[aria-selected="true"] {
-    border-bottom-color: var(--bec-secondary) !important;
-    color: var(--bec-primary) !important;
-}
-
-/* Sidebar branding */
-section[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
-}
-
-section[data-testid="stSidebar"] > div {
-    padding-top: 2rem;
-}
-
-/* Custom scrollbar */
-::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: #f1f5f9;
-}
-
-::-webkit-scrollbar-thumb {
-    background: var(--bec-secondary);
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: var(--bec-primary);
-}
-
-/* Team logos */
-.team-logo {
-    height: 40px;
-    width: 40px;
-    object-fit: contain;
-    margin-right: 0.75rem;
-    vertical-align: middle;
-    border-radius: 4px;
-    background: white;
-    padding: 4px;
-}
-
-.team-logo-small {
-    height: 24px;
-    width: 24px;
-    object-fit: contain;
+/* Team color indicators */
+.team-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
     margin-right: 0.5rem;
     vertical-align: middle;
-}
-
-.stadium-with-logo {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.metric-card .team-logo {
-    height: 50px;
-    width: 50px;
-    margin: 0 auto 0.75rem;
-    display: block;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -309,74 +247,68 @@ def create_default_data():
         {'Stadium/Market': 'Allegiant Stadium Properties (Las Vegas)', 'Office Score': 65, 'Retail Score': 30, 'Hospitality Score': 62, 'Multifamily Score': 11},
     ])
 
-# Stadium metadata for visualization
+# Stadium metadata for visualization with team colors
 STADIUM_META = {
     "Mercedez Benz (Atlanta)": {
         "city": "Atlanta, GA", 
         "team": "Atlanta Falcons / Atlanta United", 
         "sport": "NFL/MLS", 
         "short": "Mercedes-Benz",
-        "logo_url": "https://content.sportslogos.net/logos/7/173/thumbs/299.gif"  # Falcons logo
+        "color": "#A71930"  # Falcons Red
     },
     "Truist Park (Atlanta)": {
         "city": "Atlanta, GA", 
         "team": "Atlanta Braves", 
         "sport": "MLB", 
         "short": "Truist Park",
-        "logo_url": "https://content.sportslogos.net/logos/54/51/thumbs/agbbeetb44ke42fznuhtb3q77.gif"  # Braves logo
+        "color": "#CE1141"  # Braves Red
     },
     "Bank of America Properties (Charlotte)": {
         "city": "Charlotte, NC", 
         "team": "Carolina Panthers", 
         "sport": "NFL", 
         "short": "Bank of America",
-        "logo_url": "https://content.sportslogos.net/logos/7/174/thumbs/f1wggq2k8qlkr92v4qrgainted.gif"  # Panthers logo
+        "color": "#0085CA"  # Panthers Blue
     },
     "Spectrum Center Properties (Charlotte)": {
         "city": "Charlotte, NC", 
         "team": "Charlotte Hornets", 
         "sport": "NBA", 
         "short": "Spectrum Center",
-        "logo_url": "https://content.sportslogos.net/logos/6/5120/thumbs/512019262015.gif"  # Hornets logo
+        "color": "#1D1160"  # Hornets Purple
     },
     "Allegiant Stadium Properties (Las Vegas)": {
         "city": "Las Vegas, NV", 
         "team": "Las Vegas Raiders", 
         "sport": "NFL", 
         "short": "Allegiant",
-        "logo_url": "https://content.sportslogos.net/logos/7/6708/thumbs/670852702020.gif"  # Raiders logo
+        "color": "#000000"  # Raiders Black/Silver
     },
     "T Mobile Arena (Las Vegas)": {
         "city": "Las Vegas, NV", 
         "team": "Vegas Golden Knights", 
         "sport": "NHL", 
         "short": "T-Mobile",
-        "logo_url": "https://content.sportslogos.net/logos/1/6114/thumbs/611426762018.gif"  # Golden Knights logo
+        "color": "#B4975A"  # Golden Knights Gold
     },
     "American Airlines Center (DFW)": {
         "city": "Dallas, TX", 
         "team": "Dallas Mavericks / Dallas Stars", 
         "sport": "NBA/NHL", 
         "short": "American Airlines",
-        "logo_url": "https://content.sportslogos.net/logos/6/228/thumbs/22834632018.gif"  # Mavericks logo
+        "color": "#00538C"  # Mavericks Blue
     },
     "AT&T Stadium (DFW)": {
         "city": "Arlington, TX", 
         "team": "Dallas Cowboys", 
         "sport": "NFL", 
         "short": "AT&T Stadium",
-        "logo_url": "https://content.sportslogos.net/logos/7/165/thumbs/406.gif"  # Cowboys logo
+        "color": "#041E42"  # Cowboys Navy Blue
     },
 }
 
-SPORT_COLORS = {
-    "NFL": "#003366",      # Blue Eagle Navy
-    "MLB": "#0066CC",      # Blue Eagle Bright Blue
-    "NBA": "#1a4d7a",      # Medium Blue
-    "NHL": "#002447",      # Deep Navy
-    "NFL/MLS": "#004080",  # Royal Blue
-    "NBA/NHL": "#0052a3"   # Cobalt Blue
-}
+# Use team colors for visualizations
+TEAM_COLORS = {stadium: meta["color"] for stadium, meta in STADIUM_META.items()}
 
 def rating(score):
     """Convert score to rating category"""
@@ -425,7 +357,7 @@ with st.sidebar:
         df['Team'] = df['Stadium/Market'].map(lambda x: STADIUM_META.get(x, {}).get('team', ''))
         df['Sport'] = df['Stadium/Market'].map(lambda x: STADIUM_META.get(x, {}).get('sport', ''))
         df['Short Name'] = df['Stadium/Market'].map(lambda x: STADIUM_META.get(x, {}).get('short', x.split()[0]))
-        df['Logo URL'] = df['Stadium/Market'].map(lambda x: STADIUM_META.get(x, {}).get('logo_url', ''))
+        df['Team Color'] = df['Stadium/Market'].map(lambda x: STADIUM_META.get(x, {}).get('color', '#64748b'))
         
         # Calculate best use and top score
         df['Best Score'] = df[['Office Score', 'Retail Score', 'Hospitality Score', 'Multifamily Score']].max(axis=1)
@@ -454,30 +386,6 @@ with st.sidebar:
         st.caption("**Potential Investment**: Score > 100")
         st.caption("**More Information Needed**: Score 60-100")
         st.caption("**Avoid This Asset Class**: Score < 60")
-        
-        st.markdown("---")
-        st.markdown("### Teams & Stadiums")
-        st.caption("Visual reference guide")
-        
-        # Display each team with logo
-        for stadium in sorted(df['Stadium/Market'].unique()):
-            meta = STADIUM_META.get(stadium, {})
-            logo_url = meta.get('logo_url', '')
-            team = meta.get('team', '')
-            sport = meta.get('sport', '')
-            
-            if logo_url:
-                st.markdown(f"""
-                <div style="display:flex; align-items:center; margin:0.5rem 0; padding:0.5rem; background:white; border-radius:6px; border:1px solid #e2e8f0;">
-                    <img src="{logo_url}" style="height:30px; width:30px; object-fit:contain; margin-right:0.75rem;" onerror="this.style.display='none'">
-                    <div style="flex:1;">
-                        <div style="font-size:0.8rem; font-weight:600; color:#0f172a;">{stadium}</div>
-                        <div style="font-size:0.7rem; color:#64748b;">{team} • {sport}</div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.markdown(f"**{stadium}** • {team}")
 
 # Apply filters
 if data_loaded and len(df) > 0:
@@ -489,28 +397,9 @@ else:
 # HEADER
 # ══════════════════════════════════════════════════════════════════════════════
 
-# Add logo uploader in sidebar
-with st.sidebar:
-    st.markdown("---")
-    st.markdown("### Company Branding")
-    logo_file = st.file_uploader(
-        "Upload Blue Eagle Capital Logo",
-        type=['png', 'jpg', 'jpeg', 'svg'],
-        help="Upload your company logo (recommended: PNG with transparent background)"
-    )
-    
-    if logo_file is not None:
-        import base64
-        logo_bytes = logo_file.read()
-        logo_base64 = base64.b64encode(logo_bytes).decode()
-        logo_html = f'<img src="data:image/png;base64,{logo_base64}" class="bec-logo" alt="Blue Eagle Capital">'
-    else:
-        # Placeholder logo text
-        logo_html = '<div class="bec-logo" style="background:rgba(255,255,255,0.2); padding:0.5rem 1rem; border-radius:6px; font-weight:700; font-size:0.9rem;">BLUE EAGLE CAPITAL</div>'
-
 st.markdown(f"""
 <div class="main-header">
-    {logo_html}
+    <div class="bec-logo">BLUE EAGLE CAPITAL</div>
     <h1>Stadium District Real Estate Investment Analyzer</h1>
     <p>Comprehensive analysis of commercial real estate opportunities in major sports venue corridors. 
     Data-driven investment scoring across office, retail, hospitality, and multifamily asset classes.</p>
@@ -518,7 +407,6 @@ st.markdown(f"""
         <span class="pill">{len(filtered)} Stadiums Analyzed</span>
         <span class="pill">4 Asset Classes</span>
         <span class="pill">CoStar Analytics Q1 2026</span>
-        <span class="pill">Blue Eagle Capital Research</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -546,15 +434,13 @@ with tab1:
     for idx, (_, row) in enumerate(top3.iterrows()):
         with cols[idx]:
             badge_class = f"score-badge-{rating(row['Best Score'])}"
-            logo_url = STADIUM_META.get(row['Stadium/Market'], {}).get('logo_url', '')
-            logo_html = f'<img src="{logo_url}" class="team-logo" onerror="this.style.display=\'none\'">' if logo_url else ''
+            team_color = row['Team Color']
             
             st.markdown(f"""
-            <div class="metric-card">
+            <div class="metric-card" style="border-top: 4px solid {team_color};">
                 <div class="label">Rank #{idx+1}</div>
-                {logo_html}
                 <div class="value">{row['Stadium/Market']}</div>
-                <div class="sub">{row['City']}</div>
+                <div class="sub">{row['Team']} • {row['City']}</div>
                 <div class="sub" style="margin-top:0.5rem;">
                     <span class="{badge_class} score-badge">{rating_display(row['Best Score'])}</span>
                 </div>
@@ -602,13 +488,11 @@ with tab1:
     ]:
         with col:
             top = filtered.nlargest(1, asset).iloc[0]
-            logo_url = STADIUM_META.get(top['Stadium/Market'], {}).get('logo_url', '')
-            logo_html = f'<img src="{logo_url}" class="team-logo" onerror="this.style.display=\'none\'">' if logo_url else ''
+            team_color = top['Team Color']
             
             st.markdown(f"""
-            <div class="metric-card">
+            <div class="metric-card" style="border-top: 4px solid {team_color};">
                 <div class="label">{label} Leader</div>
-                {logo_html}
                 <div class="value" style="font-size:1rem;">{top['Stadium/Market']}</div>
                 <div class="sub">{top[asset]:.0f} Score</div>
             </div>
@@ -629,7 +513,9 @@ with tab2:
             asset_df = filtered.sort_values(asset_col, ascending=False)
             
             fig = go.Figure()
-            colors = [SPORT_COLORS.get(sport, "#64748b") for sport in asset_df["Sport"]]
+            # Use team colors for each stadium
+            colors = [asset_df.loc[asset_df['Stadium/Market'] == stadium, 'Team Color'].values[0] 
+                     for stadium in asset_df['Stadium/Market']]
             
             fig.add_trace(go.Bar(
                 x=asset_df["Stadium/Market"],
@@ -668,14 +554,11 @@ with tab2:
             top3_asset = asset_df.head(3)
             
             for idx, (_, row) in enumerate(top3_asset.iterrows(), 1):
-                logo_url = STADIUM_META.get(row['Stadium/Market'], {}).get('logo_url', '')
+                team_color = row['Team Color']
                 
                 col1, col2, col3 = st.columns([3, 2, 2])
                 with col1:
-                    if logo_url:
-                        st.markdown(f'<img src="{logo_url}" class="team-logo-small" style="display:inline;" onerror="this.style.display=\'none\'"> **{idx}. {row["Stadium/Market"]}**', unsafe_allow_html=True)
-                    else:
-                        st.markdown(f"**{idx}. {row['Stadium/Market']}**")
+                    st.markdown(f'<span class="team-indicator" style="background-color:{team_color};"></span>**{idx}. {row["Stadium/Market"]}**', unsafe_allow_html=True)
                 with col2:
                     badge_class = f"score-badge-{rating(row[asset_col])}"
                     st.markdown(f'<span class="{badge_class} score-badge">{row[asset_col]:.0f}</span>', 
@@ -719,15 +602,14 @@ with tab3:
             # Close the polygon
             values.append(values[0])
             
-            sport = stadium_data['Sport']
-            color = SPORT_COLORS.get(sport, "#64748b")
+            team_color = stadium_data['Team Color']
             
             fig.add_trace(go.Scatterpolar(
                 r=values,
                 theta=categories + [categories[0]],
                 fill='toself',
                 name=stadium_data['Short Name'],
-                line=dict(color=color, width=2),
+                line=dict(color=team_color, width=2),
                 marker=dict(size=8)
             ))
         
@@ -783,14 +665,13 @@ with tab3:
                 ]
                 values.append(values[0])
                 
-                sport = stadium_data['Sport']
-                color = SPORT_COLORS.get(sport, "#64748b")
+                team_color = stadium_data['Team Color']
                 
                 fig_single.add_trace(go.Scatterpolar(
                     r=values,
                     theta=categories + [categories[0]],
                     fill='toself',
-                    line=dict(color=color, width=3),
+                    line=dict(color=team_color, width=3),
                     marker=dict(size=10)
                 ))
                 
@@ -839,7 +720,7 @@ with tab4:
                 mode="markers+text",
                 marker=dict(
                     size=16,
-                    color=SPORT_COLORS.get(row["Sport"], "#64748b"),
+                    color=row['Team Color'],
                     line=dict(width=2, color="white")
                 ),
                 text=[row["Short Name"]],
