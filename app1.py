@@ -234,6 +234,86 @@ def load_matrix_from_excel(file_obj):
         st.error(f"Details: {traceback.format_exc()}")
         return None
 
+def load_weights_and_index_data(file_obj):
+    """
+    Load the weights and index calculation data for interactive weight adjustment.
+    Returns weights_df and index_df.
+    """
+    try:
+        # Read weights
+        weights_df = pd.read_excel(file_obj, sheet_name='Asset Class Weighting Matrix', header=3)
+        # Remove the total row (last row with NaN metric)
+        weights_df = weights_df[weights_df['Metric'].notna()].copy()
+        
+        # Read index calculation data
+        index_df = pd.read_excel(file_obj, sheet_name='Index Calculation', header=3)
+        
+        # Filter for stadium data only
+        stadiums = ['MBS', 'Braves', 'American Airlines Center', 'AT&T Stadium', 
+                   'Bank of America Properties', 'Spectrum Center Properties', 
+                   'T Mobile Arena', 'Allegiant Stadium Properties']
+        index_df = index_df[index_df['Stadium/Market'].isin(stadiums)].copy()
+        
+        return weights_df, index_df
+        
+    except Exception as e:
+        st.error(f"Error loading weights and index data: {str(e)}")
+        return None, None
+
+def calculate_scores_with_custom_weights(index_df, custom_weights):
+    """
+    Calculate scores using custom weights.
+    
+    Parameters:
+    - index_df: DataFrame with indexed metric values for each stadium/product type
+    - custom_weights: Dict with structure {metric_name: {asset_class: weight}}
+    
+    Returns:
+    - DataFrame with Stadium/Market and scores for each asset class
+    """
+    results = []
+    
+    # Stadium name mapping
+    name_mapping = {
+        'MBS': 'Mercedez Benz (Atlanta)',
+        'Braves': 'Truist Park (Atlanta)',
+        'Bank of America Properties': 'Bank of America Properties (Charlotte)',
+        'Spectrum Center Properties': 'Spectrum Center Properties (Charlotte)',
+        'Allegiant Stadium Properties': 'Allegiant Stadium Properties (Las Vegas)',
+        'T Mobile Arena': 'T Mobile Arena (Las Vegas)',
+        'American Airlines Center': 'American Airlines Center (DFW)',
+        'AT&T Stadium': 'AT&T Stadium (DFW)'
+    }
+    
+    for stadium in index_df['Stadium/Market'].unique():
+        stadium_data = index_df[index_df['Stadium/Market'] == stadium]
+        
+        scores = {'Stadium/Market': name_mapping.get(stadium, stadium)}
+        
+        for product_type in ['Office', 'Retail', 'Hospitality', 'Multifamily']:
+            product_data = stadium_data[stadium_data['Product Type'] == product_type]
+            
+            if len(product_data) > 0:
+                row_data = product_data.iloc[0]
+                
+                # Calculate weighted score using custom weights
+                total_score = 0
+                
+                for metric, weights in custom_weights.items():
+                    weight = weights.get(product_type, 0)
+                    if weight > 0 and metric in row_data.index:
+                        value = row_data[metric]
+                        if pd.notna(value):
+                            total_score += value * weight
+                
+                scores[f'{product_type} Score'] = round(total_score, 0)
+            else:
+                scores[f'{product_type} Score'] = 0
+        
+        results.append(scores)
+    
+    return pd.DataFrame(results)
+
 def create_default_data():
     """Create default data with exact Matrix scores"""
     return pd.DataFrame([
@@ -335,16 +415,102 @@ with st.sidebar:
         help="Upload Excel file with Matrix tab (last sheet)"
     )
     
+    # Initialize session state for weights
+    if 'custom_weights' not in st.session_state:
+        st.session_state.custom_weights = None
+    if 'weights_df' not in st.session_state:
+        st.session_state.weights_df = None
+    if 'index_df' not in st.session_state:
+        st.session_state.index_df = None
+    if 'use_custom_weights' not in st.session_state:
+        st.session_state.use_custom_weights = False
+    
     if uploaded_file is not None:
         with st.spinner("Loading Matrix data from Excel..."):
-            df = load_matrix_from_excel(uploaded_file)
+            df_original = load_matrix_from_excel(uploaded_file)
+            
+            # Also load weights and index data for custom weight calculation
+            weights_df, index_df = load_weights_and_index_data(uploaded_file)
+            
+            if weights_df is not None and index_df is not None:
+                st.session_state.weights_df = weights_df
+                st.session_state.index_df = index_df
         
-        if df is None or len(df) == 0:
+        if df_original is None or len(df_original) == 0:
             st.error("Could not load Matrix data. Using default scores.")
             df = create_default_data()
             data_loaded = True
         else:
-            st.success(f"✓ Loaded {len(df)} stadiums from Matrix tab")
+            st.success(f"✓ Loaded {len(df_original)} stadiums from Matrix tab")
+            
+            # Weight Adjustment UI
+            st.markdown("---")
+            st.markdown("### 🎚️ Adjust Weights")
+            
+            use_custom = st.checkbox(
+                "Enable Custom Weights",
+                value=st.session_state.use_custom_weights,
+                help="Adjust metric weights to recalculate scores"
+            )
+            st.session_state.use_custom_weights = use_custom
+            
+            if use_custom and st.session_state.weights_df is not None:
+                st.markdown("#### Metric Weights")
+                st.caption("Adjust weights for each metric across asset classes")
+                
+                # Create expandable sections for each asset class
+                asset_classes = ['Office', 'Retail', 'Hospitality', 'Multifamily']
+                
+                # Initialize custom weights if not already done
+                if st.session_state.custom_weights is None:
+                    custom_weights = {}
+                    for _, row in st.session_state.weights_df.iterrows():
+                        metric = row['Metric']
+                        custom_weights[metric] = {
+                            'Office': row['Office'],
+                            'Retail': row['Retail'],
+                            'Hospitality': row['Hospitality'],
+                            'Multifamily': row['Multifamily']
+                        }
+                    st.session_state.custom_weights = custom_weights
+                
+                # Asset class tabs for weight adjustment
+                for asset_class in asset_classes:
+                    with st.expander(f"📊 {asset_class} Weights"):
+                        total_weight = 0
+                        
+                        for metric in st.session_state.custom_weights.keys():
+                            current_weight = st.session_state.custom_weights[metric][asset_class]
+                            
+                            new_weight = st.slider(
+                                metric,
+                                min_value=0.0,
+                                max_value=1.0,
+                                value=float(current_weight),
+                                step=0.01,
+                                key=f"{asset_class}_{metric}",
+                                format="%.2f"
+                            )
+                            
+                            st.session_state.custom_weights[metric][asset_class] = new_weight
+                            total_weight += new_weight
+                        
+                        # Show total weight
+                        if abs(total_weight - 1.0) > 0.01:
+                            st.warning(f"⚠️ Total weight: {total_weight:.2f} (should be 1.00)")
+                        else:
+                            st.success(f"✓ Total weight: {total_weight:.2f}")
+                
+                # Recalculate scores with custom weights
+                df = calculate_scores_with_custom_weights(
+                    st.session_state.index_df, 
+                    st.session_state.custom_weights
+                )
+                st.info("📊 Scores recalculated with custom weights")
+            else:
+                # Use original Matrix scores
+                df = df_original
+            
             data_loaded = True
     else:
         st.info("Using default Matrix scores")
