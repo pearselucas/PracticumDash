@@ -23,48 +23,201 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
 
-.main-header {
-    background: linear-gradient(135deg, #1a365d 0%, #2c5282 60%, #2b6cb0 100%);
-    color: white; padding: 2.5rem 3rem; border-radius: 16px;
-    margin-bottom: 2rem; box-shadow: 0 8px 32px rgba(26,54,93,0.15);
+/* Blue Eagle Capital Brand Colors */
+:root {
+    --bec-primary: #003366;      /* Deep Navy Blue */
+    --bec-secondary: #0066CC;    /* Bright Blue */
+    --bec-accent: #66B2FF;       /* Light Blue */
+    --bec-gold: #C49A6C;         /* Metallic Gold accent */
+    --bec-dark: #001a33;         /* Darker Navy */
 }
-.main-header h1 { font-size: 2.2rem; margin: 0; font-weight: 800; letter-spacing:-0.03em; }
-.main-header p  { font-size: 1rem; margin: 0.6rem 0 0; opacity: 0.9; line-height: 1.6; }
-.main-header .subtitle-row { display:flex; gap:2rem; margin-top:1rem; flex-wrap:wrap; }
-.main-header .pill { background:rgba(255,255,255,0.15); border-radius:6px;
-                     padding:0.4rem 1rem; font-size:0.85rem; font-weight:600; }
+
+.main-header {
+    background: linear-gradient(135deg, var(--bec-dark) 0%, var(--bec-primary) 50%, var(--bec-secondary) 100%);
+    color: white; padding: 2rem 3rem; border-radius: 16px;
+    margin-bottom: 2rem; box-shadow: 0 8px 32px rgba(0,51,102,0.25);
+    position: relative;
+}
+
+.bec-logo {
+    position: absolute;
+    top: 2rem;
+    right: 3rem;
+    height: 60px;
+    width: auto;
+}
+
+.main-header h1 { 
+    font-size: 2.2rem; margin: 0; font-weight: 800; 
+    letter-spacing:-0.03em; 
+    color: white;
+}
+.main-header p  { 
+    font-size: 1rem; margin: 0.6rem 0 0; opacity: 0.95; 
+    line-height: 1.6; max-width: 75%;
+}
+.main-header .subtitle-row { 
+    display:flex; gap:2rem; margin-top:1rem; flex-wrap:wrap; 
+}
+.main-header .pill { 
+    background: rgba(255,255,255,0.2); 
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius:6px;
+    padding:0.4rem 1rem; font-size:0.85rem; font-weight:600; 
+}
 
 .metric-card {
-    background:#fff; border:1px solid #e2e8f0; border-radius:10px;
-    padding:1.25rem 1.5rem; text-align:center; height:100%;
-    box-shadow:0 2px 8px rgba(0,0,0,0.04); transition:all 0.2s;
+    background:#fff; 
+    border:1px solid #e2e8f0; 
+    border-radius:10px;
+    padding:1.25rem 1.5rem; 
+    text-align:center; 
+    height:100%;
+    box-shadow:0 2px 8px rgba(0,51,102,0.08); 
+    transition:all 0.2s;
+    border-top: 3px solid var(--bec-secondary);
 }
-.metric-card:hover { box-shadow:0 6px 20px rgba(0,0,0,0.08); transform: translateY(-2px); }
-.metric-card .label { font-size:0.75rem; color:#64748b; text-transform:uppercase;
-                      letter-spacing:0.08em; margin-bottom:0.4rem; font-weight:600; }
-.metric-card .value { font-size:1.6rem; font-weight:800; color:#0f172a; }
-.metric-card .sub   { font-size:0.8rem; color:#94a3b8; margin-top:0.25rem; }
+.metric-card:hover { 
+    box-shadow:0 6px 20px rgba(0,102,204,0.15); 
+    transform: translateY(-2px); 
+}
+.metric-card .label { 
+    font-size:0.75rem; 
+    color:#64748b; 
+    text-transform:uppercase;
+    letter-spacing:0.08em; 
+    margin-bottom:0.4rem; 
+    font-weight:600; 
+}
+.metric-card .value { 
+    font-size:1.6rem; 
+    font-weight:800; 
+    color: var(--bec-primary); 
+}
+.metric-card .sub   { 
+    font-size:0.8rem; 
+    color:#94a3b8; 
+    margin-top:0.25rem; 
+}
 
-.score-badge-POTENTIAL   { background:#d1fae5; color:#065f46; border:1.5px solid #6ee7b7; }
-.score-badge-INFO  { background:#fef3c7; color:#78350f; border:1.5px solid #fcd34d; }
-.score-badge-AVOID { background:#fee2e2; color:#991b1b; border:1.5px solid #fca5a5; }
+.score-badge-POTENTIAL   { 
+    background:#d1fae5; 
+    color:#065f46; 
+    border:1.5px solid #6ee7b7; 
+}
+.score-badge-INFO  { 
+    background:#fef3c7; 
+    color:#78350f; 
+    border:1.5px solid #fcd34d; 
+}
+.score-badge-AVOID { 
+    background:#fee2e2; 
+    color:#991b1b; 
+    border:1.5px solid #fca5a5; 
+}
 .score-badge {
-    display:inline-block; padding:0.3rem 0.9rem; border-radius:6px;
-    font-weight:700; font-size:0.85rem; letter-spacing:0.05em;
+    display:inline-block; 
+    padding:0.3rem 0.9rem; 
+    border-radius:6px;
+    font-weight:700; 
+    font-size:0.85rem; 
+    letter-spacing:0.05em;
 }
 
 .section-title {
-    font-size:1.1rem; font-weight:700; color:#0f172a;
-    border-bottom:2px solid #e2e8f0; padding-bottom:0.5rem;
+    font-size:1.1rem; 
+    font-weight:700; 
+    color: var(--bec-primary);
+    border-bottom:2px solid var(--bec-secondary); 
+    padding-bottom:0.5rem;
     margin:1.5rem 0 1rem;
 }
+
 .score-explainer {
-    background:#f8fafc; border:1px solid #cbd5e1; border-radius:10px;
-    padding:1.25rem 1.5rem; font-size:0.88rem; color:#475569; margin:1rem 0;
+    background:#f8fafc; 
+    border:1px solid #cbd5e1; 
+    border-left: 4px solid var(--bec-secondary);
+    border-radius:10px;
+    padding:1.25rem 1.5rem; 
+    font-size:0.88rem; 
+    color:#475569; 
+    margin:1rem 0;
     line-height: 1.7;
 }
-.score-explainer strong { color:#0f172a; }
-div[data-testid="stTabs"] button { font-weight:600; font-size:0.95rem; }
+.score-explainer strong { 
+    color: var(--bec-primary); 
+}
+
+div[data-testid="stTabs"] button { 
+    font-weight:600; 
+    font-size:0.95rem; 
+}
+
+div[data-testid="stTabs"] button[aria-selected="true"] {
+    border-bottom-color: var(--bec-secondary) !important;
+    color: var(--bec-primary) !important;
+}
+
+/* Sidebar branding */
+section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+}
+
+section[data-testid="stSidebar"] > div {
+    padding-top: 2rem;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--bec-secondary);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--bec-primary);
+}
+
+/* Team logos */
+.team-logo {
+    height: 40px;
+    width: 40px;
+    object-fit: contain;
+    margin-right: 0.75rem;
+    vertical-align: middle;
+    border-radius: 4px;
+    background: white;
+    padding: 4px;
+}
+
+.team-logo-small {
+    height: 24px;
+    width: 24px;
+    object-fit: contain;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+}
+
+.stadium-with-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.metric-card .team-logo {
+    height: 50px;
+    width: 50px;
+    margin: 0 auto 0.75rem;
+    display: block;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -158,19 +311,71 @@ def create_default_data():
 
 # Stadium metadata for visualization
 STADIUM_META = {
-    "Mercedez Benz (Atlanta)": {"city": "Atlanta, GA", "team": "Atlanta Falcons / Atlanta United", "sport": "NFL/MLS", "short": "Mercedes-Benz"},
-    "Truist Park (Atlanta)": {"city": "Atlanta, GA", "team": "Atlanta Braves", "sport": "MLB", "short": "Truist Park"},
-    "Bank of America Properties (Charlotte)": {"city": "Charlotte, NC", "team": "Carolina Panthers", "sport": "NFL", "short": "Bank of America"},
-    "Spectrum Center Properties (Charlotte)": {"city": "Charlotte, NC", "team": "Charlotte Hornets", "sport": "NBA", "short": "Spectrum Center"},
-    "Allegiant Stadium Properties (Las Vegas)": {"city": "Las Vegas, NV", "team": "Las Vegas Raiders", "sport": "NFL", "short": "Allegiant"},
-    "T Mobile Arena (Las Vegas)": {"city": "Las Vegas, NV", "team": "Vegas Golden Knights", "sport": "NHL", "short": "T-Mobile"},
-    "American Airlines Center (DFW)": {"city": "Dallas, TX", "team": "Dallas Mavericks / Dallas Stars", "sport": "NBA/NHL", "short": "American Airlines"},
-    "AT&T Stadium (DFW)": {"city": "Arlington, TX", "team": "Dallas Cowboys", "sport": "NFL", "short": "AT&T Stadium"},
+    "Mercedez Benz (Atlanta)": {
+        "city": "Atlanta, GA", 
+        "team": "Atlanta Falcons / Atlanta United", 
+        "sport": "NFL/MLS", 
+        "short": "Mercedes-Benz",
+        "logo_url": "https://content.sportslogos.net/logos/7/173/thumbs/299.gif"  # Falcons logo
+    },
+    "Truist Park (Atlanta)": {
+        "city": "Atlanta, GA", 
+        "team": "Atlanta Braves", 
+        "sport": "MLB", 
+        "short": "Truist Park",
+        "logo_url": "https://content.sportslogos.net/logos/54/51/thumbs/agbbeetb44ke42fznuhtb3q77.gif"  # Braves logo
+    },
+    "Bank of America Properties (Charlotte)": {
+        "city": "Charlotte, NC", 
+        "team": "Carolina Panthers", 
+        "sport": "NFL", 
+        "short": "Bank of America",
+        "logo_url": "https://content.sportslogos.net/logos/7/174/thumbs/f1wggq2k8qlkr92v4qrgainted.gif"  # Panthers logo
+    },
+    "Spectrum Center Properties (Charlotte)": {
+        "city": "Charlotte, NC", 
+        "team": "Charlotte Hornets", 
+        "sport": "NBA", 
+        "short": "Spectrum Center",
+        "logo_url": "https://content.sportslogos.net/logos/6/5120/thumbs/512019262015.gif"  # Hornets logo
+    },
+    "Allegiant Stadium Properties (Las Vegas)": {
+        "city": "Las Vegas, NV", 
+        "team": "Las Vegas Raiders", 
+        "sport": "NFL", 
+        "short": "Allegiant",
+        "logo_url": "https://content.sportslogos.net/logos/7/6708/thumbs/670852702020.gif"  # Raiders logo
+    },
+    "T Mobile Arena (Las Vegas)": {
+        "city": "Las Vegas, NV", 
+        "team": "Vegas Golden Knights", 
+        "sport": "NHL", 
+        "short": "T-Mobile",
+        "logo_url": "https://content.sportslogos.net/logos/1/6114/thumbs/611426762018.gif"  # Golden Knights logo
+    },
+    "American Airlines Center (DFW)": {
+        "city": "Dallas, TX", 
+        "team": "Dallas Mavericks / Dallas Stars", 
+        "sport": "NBA/NHL", 
+        "short": "American Airlines",
+        "logo_url": "https://content.sportslogos.net/logos/6/228/thumbs/22834632018.gif"  # Mavericks logo
+    },
+    "AT&T Stadium (DFW)": {
+        "city": "Arlington, TX", 
+        "team": "Dallas Cowboys", 
+        "sport": "NFL", 
+        "short": "AT&T Stadium",
+        "logo_url": "https://content.sportslogos.net/logos/7/165/thumbs/406.gif"  # Cowboys logo
+    },
 }
 
 SPORT_COLORS = {
-    "NFL": "#013369", "MLB": "#041E42", "NBA": "#C8102E", 
-    "NHL": "#000000", "NFL/MLS": "#0A2240", "NBA/NHL": "#00471B"
+    "NFL": "#003366",      # Blue Eagle Navy
+    "MLB": "#0066CC",      # Blue Eagle Bright Blue
+    "NBA": "#1a4d7a",      # Medium Blue
+    "NHL": "#002447",      # Deep Navy
+    "NFL/MLS": "#004080",  # Royal Blue
+    "NBA/NHL": "#0052a3"   # Cobalt Blue
 }
 
 def rating(score):
@@ -220,6 +425,7 @@ with st.sidebar:
         df['Team'] = df['Stadium/Market'].map(lambda x: STADIUM_META.get(x, {}).get('team', ''))
         df['Sport'] = df['Stadium/Market'].map(lambda x: STADIUM_META.get(x, {}).get('sport', ''))
         df['Short Name'] = df['Stadium/Market'].map(lambda x: STADIUM_META.get(x, {}).get('short', x.split()[0]))
+        df['Logo URL'] = df['Stadium/Market'].map(lambda x: STADIUM_META.get(x, {}).get('logo_url', ''))
         
         # Calculate best use and top score
         df['Best Score'] = df[['Office Score', 'Retail Score', 'Hospitality Score', 'Multifamily Score']].max(axis=1)
@@ -248,6 +454,30 @@ with st.sidebar:
         st.caption("**Potential Investment**: Score > 100")
         st.caption("**More Information Needed**: Score 60-100")
         st.caption("**Avoid This Asset Class**: Score < 60")
+        
+        st.markdown("---")
+        st.markdown("### Teams & Stadiums")
+        st.caption("Visual reference guide")
+        
+        # Display each team with logo
+        for stadium in sorted(df['Stadium/Market'].unique()):
+            meta = STADIUM_META.get(stadium, {})
+            logo_url = meta.get('logo_url', '')
+            team = meta.get('team', '')
+            sport = meta.get('sport', '')
+            
+            if logo_url:
+                st.markdown(f"""
+                <div style="display:flex; align-items:center; margin:0.5rem 0; padding:0.5rem; background:white; border-radius:6px; border:1px solid #e2e8f0;">
+                    <img src="{logo_url}" style="height:30px; width:30px; object-fit:contain; margin-right:0.75rem;" onerror="this.style.display='none'">
+                    <div style="flex:1;">
+                        <div style="font-size:0.8rem; font-weight:600; color:#0f172a;">{stadium}</div>
+                        <div style="font-size:0.7rem; color:#64748b;">{team} • {sport}</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"**{stadium}** • {team}")
 
 # Apply filters
 if data_loaded and len(df) > 0:
@@ -258,8 +488,29 @@ else:
 # ══════════════════════════════════════════════════════════════════════════════
 # HEADER
 # ══════════════════════════════════════════════════════════════════════════════
+
+# Add logo uploader in sidebar
+with st.sidebar:
+    st.markdown("---")
+    st.markdown("### Company Branding")
+    logo_file = st.file_uploader(
+        "Upload Blue Eagle Capital Logo",
+        type=['png', 'jpg', 'jpeg', 'svg'],
+        help="Upload your company logo (recommended: PNG with transparent background)"
+    )
+    
+    if logo_file is not None:
+        import base64
+        logo_bytes = logo_file.read()
+        logo_base64 = base64.b64encode(logo_bytes).decode()
+        logo_html = f'<img src="data:image/png;base64,{logo_base64}" class="bec-logo" alt="Blue Eagle Capital">'
+    else:
+        # Placeholder logo text
+        logo_html = '<div class="bec-logo" style="background:rgba(255,255,255,0.2); padding:0.5rem 1rem; border-radius:6px; font-weight:700; font-size:0.9rem;">BLUE EAGLE CAPITAL</div>'
+
 st.markdown(f"""
 <div class="main-header">
+    {logo_html}
     <h1>Stadium District Real Estate Investment Analyzer</h1>
     <p>Comprehensive analysis of commercial real estate opportunities in major sports venue corridors. 
     Data-driven investment scoring across office, retail, hospitality, and multifamily asset classes.</p>
@@ -267,6 +518,7 @@ st.markdown(f"""
         <span class="pill">{len(filtered)} Stadiums Analyzed</span>
         <span class="pill">4 Asset Classes</span>
         <span class="pill">CoStar Analytics Q1 2026</span>
+        <span class="pill">Blue Eagle Capital Research</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -294,9 +546,13 @@ with tab1:
     for idx, (_, row) in enumerate(top3.iterrows()):
         with cols[idx]:
             badge_class = f"score-badge-{rating(row['Best Score'])}"
+            logo_url = STADIUM_META.get(row['Stadium/Market'], {}).get('logo_url', '')
+            logo_html = f'<img src="{logo_url}" class="team-logo" onerror="this.style.display=\'none\'">' if logo_url else ''
+            
             st.markdown(f"""
             <div class="metric-card">
                 <div class="label">Rank #{idx+1}</div>
+                {logo_html}
                 <div class="value">{row['Stadium/Market']}</div>
                 <div class="sub">{row['City']}</div>
                 <div class="sub" style="margin-top:0.5rem;">
@@ -346,9 +602,13 @@ with tab1:
     ]:
         with col:
             top = filtered.nlargest(1, asset).iloc[0]
+            logo_url = STADIUM_META.get(top['Stadium/Market'], {}).get('logo_url', '')
+            logo_html = f'<img src="{logo_url}" class="team-logo" onerror="this.style.display=\'none\'">' if logo_url else ''
+            
             st.markdown(f"""
             <div class="metric-card">
                 <div class="label">{label} Leader</div>
+                {logo_html}
                 <div class="value" style="font-size:1rem;">{top['Stadium/Market']}</div>
                 <div class="sub">{top[asset]:.0f} Score</div>
             </div>
@@ -408,9 +668,14 @@ with tab2:
             top3_asset = asset_df.head(3)
             
             for idx, (_, row) in enumerate(top3_asset.iterrows(), 1):
+                logo_url = STADIUM_META.get(row['Stadium/Market'], {}).get('logo_url', '')
+                
                 col1, col2, col3 = st.columns([3, 2, 2])
                 with col1:
-                    st.markdown(f"**{idx}. {row['Stadium/Market']}**")
+                    if logo_url:
+                        st.markdown(f'<img src="{logo_url}" class="team-logo-small" style="display:inline;" onerror="this.style.display=\'none\'"> **{idx}. {row["Stadium/Market"]}**', unsafe_allow_html=True)
+                    else:
+                        st.markdown(f"**{idx}. {row['Stadium/Market']}**")
                 with col2:
                     badge_class = f"score-badge-{rating(row[asset_col])}"
                     st.markdown(f'<span class="{badge_class} score-badge">{row[asset_col]:.0f}</span>', 
@@ -711,3 +976,17 @@ with tab5:
     investment advice. Please consult with qualified financial and real estate professionals before making 
     investment decisions.
     </div>""", unsafe_allow_html=True)
+    
+    # Blue Eagle Capital Footer
+    st.markdown("---")
+    st.markdown("""
+    <div style="text-align:center; padding:2rem 0; color:#64748b; font-size:0.85rem;">
+        <div style="font-weight:700; color:#003366; font-size:1.1rem; margin-bottom:0.5rem;">
+            BLUE EAGLE CAPITAL
+        </div>
+        <div>Stadium District Real Estate Research & Analytics</div>
+        <div style="margin-top:0.5rem; font-size:0.75rem;">
+            Powered by CoStar Analytics | © 2026 Blue Eagle Capital. All rights reserved.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
